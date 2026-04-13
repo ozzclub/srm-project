@@ -57,6 +57,37 @@ export const upload = multer({
   fileFilter,
 });
 
+// Excel import specific upload config
+// Uses memory storage (no disk writes) and doesn't require transaction_id
+const excelStorage: StorageEngine = multer.memoryStorage();
+
+const excelFileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+  // Only allow Excel files
+  const allowedExtensions = /\.xlsx$|\.xls$/i;
+  const allowedMimeTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+  ];
+
+  const hasValidExtension = allowedExtensions.test(file.originalname);
+  const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
+
+  if (hasValidExtension || hasValidMimeType) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only Excel files (.xlsx, .xls) are allowed'));
+  }
+};
+
+export const uploadExcel = multer({
+  storage: excelStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 1, // Only one file at a time
+  },
+  fileFilter: excelFileFilter,
+});
+
 // Error handling middleware for multer
 export const handleMulterError = (
   err: any,

@@ -12,7 +12,8 @@ const poolConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  timezone: '+09:00',
+  timezone: '+07:00',  // WIB (Waktu Indonesia Barat / Asia/Jakarta)
+  dateStrings: true,   // Return DATE/TIME/DATETIME as raw strings to avoid timezone shift in JSON serialization
 };
 
 // Create connection pool

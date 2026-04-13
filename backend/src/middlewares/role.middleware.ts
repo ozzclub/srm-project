@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '../types/api.types';
+import { JwtPayload } from '../types/user.types';
 
-type Role = 'admin' | 'staff';
+// Use Role from JwtPayload to stay in sync with user.types.ts
+type Role = JwtPayload['role'];
 
 export const authorize = (...allowedRoles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {

@@ -12,6 +12,8 @@ import {
   X,
   LogOut,
   ClipboardList,
+  Send,
+  Warehouse,
 } from 'lucide-react';
 import { getCurrentUser, removeAuthCookies } from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
@@ -22,6 +24,8 @@ const menuItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Movement Log', href: '/movement-log', icon: FileText },
   { name: 'MTO', href: '/mto', icon: ClipboardList },
+  { name: 'SPP Request', href: '/spp-request', icon: Send },
+  { name: 'Inventory', href: '/inventory', icon: Warehouse },
   { name: 'Material Katalog', href: '/material', icon: Package },
   { name: 'Users', href: '/users', icon: Users, adminOnly: true },
 ];

@@ -1,5 +1,6 @@
 import { pool } from '../config/database';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { migrateSPPAndInventory } from './migrate-spp-inventory';
 
 interface ColumnInfo {
   Field: string;
@@ -120,7 +121,7 @@ export class MigrationService {
             name VARCHAR(100) NOT NULL,
             email VARCHAR(100) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
-            role ENUM('admin', 'staff') DEFAULT 'staff',
+            role ENUM('admin', 'staff', 'workshop', 'material_site') DEFAULT 'staff',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
@@ -427,5 +428,8 @@ export class MigrationService {
     console.log(`   📋 Tables created/verified: ${tablesCreated}`);
     console.log(`   📊 Indexes created: ${indexesCreated}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    // Run SPP & Inventory migrations
+    await migrateSPPAndInventory();
   }
 }

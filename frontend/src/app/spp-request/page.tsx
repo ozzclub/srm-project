@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { mtoApi } from '@/lib/api';
+import { sppApi } from '@/lib/api';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,11 +15,15 @@ import {
   FileText,
   Eye,
   Trash2,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
-import MTOStatusBadge from '@/components/mto/MTOStatusBadge';
+import { SPPStatusBadge } from '@/components/spp';
 import { formatDateLocal } from '@/utils/date';
+import SPPImportModal from '@/components/spp/SPPImportModal';
+import { format } from 'date-fns';
 
-function MTOList() {
+function SPPRequestList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -31,12 +35,13 @@ function MTOList() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [status, setStatus] = useState('');
+  const [showImportModal, setShowImportModal] = useState(false);
 
-  // Fetch MTO requests
-  const { data: mtoData, isLoading } = useQuery({
-    queryKey: ['mto-requests', page, limit, search, status, dateFrom, dateTo],
+  // Fetch SPP requests
+  const { data: sppData, isLoading } = useQuery({
+    queryKey: ['spp-requests', page, limit, search, status, dateFrom, dateTo],
     queryFn: () =>
-      mtoApi
+      sppApi
         .getAll({
           page,
           limit,
@@ -48,21 +53,21 @@ function MTOList() {
         .then((res) => res.data),
   });
 
-  const mtoRequests = mtoData?.data || [];
-  const pagination = mtoData?.pagination;
+  const sppRequests = sppData?.data || [];
+  const pagination = sppData?.pagination;
 
-  // Delete MTO mutation
+  // Delete SPP mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => mtoApi.delete(id),
+    mutationFn: (id: number) => sppApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mto-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['spp-requests'] });
     },
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    queryClient.invalidateQueries({ queryKey: ['mto-requests'] });
+    queryClient.invalidateQueries({ queryKey: ['spp-requests'] });
   };
 
   const clearFilters = () => {
@@ -74,12 +79,27 @@ function MTOList() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this MTO request?')) {
+    if (confirm('Are you sure you want to delete this SPP request?')) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (error) {
-        console.error('Failed to delete MTO:', error);
+        console.error('Failed to delete SPP:', error);
       }
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await sppApi.downloadTemplate();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'spp_request_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Failed to download template:', error);
     }
   };
 
@@ -89,16 +109,32 @@ function MTOList() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Material Take Off</h1>
-            <p className="text-gray-600 mt-1">Manage MTO requests and track fulfillment</p>
+            <h1 className="text-2xl font-bold text-gray-900">SPP Request</h1>
+            <p className="text-gray-600 mt-1">Manage SPP requests and track fulfillment</p>
           </div>
-          <Link
-            href="/mto/new"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-          >
-            <Plus className="w-5 h-5" />
-            <span>New MTO</span>
-          </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+              <span>Import Excel</span>
+            </button>
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            >
+              <Download className="w-5 h-5" />
+              <span>Template</span>
+            </button>
+            <Link
+              href="/spp-request/new"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span>New SPP</span>
+            </Link>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -111,7 +147,7 @@ function MTOList() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by MTO Number, Project, or Requested By..."
+                  placeholder="Search by SPP Number, Requested By, or Notes..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition hover:border-gray-400"
                 />
               </div>
@@ -172,8 +208,10 @@ function MTOList() {
                 >
                   <option value="">All Status</option>
                   <option value="DRAFT">Draft</option>
+                  <option value="PENDING">Pending</option>
                   <option value="APPROVED">Approved</option>
-                  <option value="PARTIAL">Partial</option>
+                  <option value="IN_TRANSIT">In Transit</option>
+                  <option value="RECEIVED">Received</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>
@@ -213,16 +251,13 @@ function MTOList() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        MTO Number
+                        SPP Number
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Project
+                        Requested By
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                         Request Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                        Requested By
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
@@ -239,83 +274,80 @@ function MTOList() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {mtoRequests.length === 0 ? (
+                    {sppRequests.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={7}
                           className="px-6 py-8 text-center text-gray-600"
                         >
                           <div className="flex flex-col items-center gap-2">
                             <FileText className="w-12 h-12 text-gray-400" />
-                            <p>No MTO requests found</p>
+                            <p>No SPP requests found</p>
                             <Link
-                              href="/mto/new"
+                              href="/spp-request/new"
                               className="text-blue-600 hover:text-blue-700 font-medium"
                             >
-                              Create your first MTO →
+                              Create your first SPP →
                             </Link>
                           </div>
                         </td>
                       </tr>
                     ) : (
-                      mtoRequests.map((mto: any) => (
+                      sppRequests.map((spp: any) => (
                         <tr
-                          key={mto.id}
+                          key={spp.id}
                           className="hover:bg-gray-50 transition-colors"
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-700">
                             <Link
-                              href={`/mto/${mto.id}`}
+                              href={`/spp-request/${spp.id}`}
                               className="hover:underline font-mono"
                             >
-                              {mto.mto_number}
+                              {spp.spp_number}
                             </Link>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {mto.project_name}
+                            {spp.requested_by}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
-                            {formatDateLocal(mto.request_date)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                            {mto.requested_by}
+                            {formatDateLocal(spp.request_date)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <MTOStatusBadge status={mto.status} />
+                            <SPPStatusBadge status={spp.status} />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                            {mto.completed_items || 0} / {mto.total_items || 0}
+                            {spp.completed_items || 0} / {spp.total_items || 0}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm hidden lg:table-cell">
                             <div className="w-32">
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
                                   className={`h-2 rounded-full ${
-                                    mto.fulfillment_percentage === 100
+                                    spp.fulfillment_percentage === 100
                                       ? 'bg-green-500'
-                                      : mto.fulfillment_percentage >= 50
+                                      : spp.fulfillment_percentage >= 50
                                       ? 'bg-orange-500'
                                       : 'bg-red-500'
                                   }`}
-                                  style={{ width: `${mto.fulfillment_percentage || 0}%` }}
+                                  style={{ width: `${spp.fulfillment_percentage || 0}%` }}
                                 />
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {mto.fulfillment_percentage?.toFixed(1) || 0}%
+                                {spp.fulfillment_percentage?.toFixed(1) || 0}%
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex items-center justify-end gap-2">
                               <Link
-                                href={`/mto/${mto.id}`}
+                                href={`/spp-request/${spp.id}`}
                                 className="text-blue-600 hover:text-blue-700"
                                 title="View"
                               >
                                 <Eye className="w-4 h-4" />
                               </Link>
                               <button
-                                onClick={() => handleDelete(mto.id)}
+                                onClick={() => handleDelete(spp.id)}
                                 className="text-red-600 hover:text-red-700"
                                 title="Delete"
                                 disabled={deleteMutation.isPending}
@@ -374,14 +406,23 @@ function MTOList() {
           )}
         </div>
       </div>
+
+      {/* Import Modal */}
+      <SPPImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['spp-requests'] });
+        }}
+      />
     </DashboardLayout>
   );
 }
 
-export default function MTOListPage() {
+export default function SPPRequestListPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <MTOList />
+      <SPPRequestList />
     </Suspense>
   );
 }

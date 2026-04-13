@@ -188,4 +188,61 @@ export const inventoryApi = {
   getLowStock: (threshold?: number) => api.get('/inventory/low-stock', { params: { threshold } }),
 };
 
+// SPP Request APIs
+export const sppApi = {
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    date_from?: string;
+    date_to?: string;
+    requested_by?: string;
+  }) => api.get('/spp', { params }),
+  getById: (id: number) => api.get(`/spp/${id}`),
+  create: (data: any) => api.post('/spp', data),
+  update: (id: number, data: any) => api.put(`/spp/${id}`, data),
+  delete: (id: number) => api.delete(`/spp/${id}`),
+  import: (formData: FormData) =>
+    api.post('/spp/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+  importPreview: (formData: FormData) =>
+    api.post('/spp/import/preview', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+  downloadTemplate: () =>
+    api.get('/spp/template', {
+      responseType: 'blob',
+    }),
+  updateStatus: (id: number, status: string) => api.put(`/spp/${id}/status`, { status }),
+  approve: (id: number, data: any) => api.post(`/spp/${id}/approve`, data),
+  receiveItem: (itemId: number, data: any) => api.post(`/spp/items/${itemId}/receive`, data),
+  addItem: (sppId: number, itemData: any) => api.post(`/spp/${sppId}/items`, itemData),
+  updateItem: (itemId: number, data: any) => api.put(`/spp/items/${itemId}`, data),
+  deleteItem: (itemId: number) => api.delete(`/spp/items/${itemId}`),
+  getFulfillment: (id: number) => api.get(`/spp/${id}/fulfillment`),
+};
+
+// Inventory APIs (New SPP-based Inventory)
+export const inventoryNewApi = {
+  getAll: (params?: {
+    location_id?: number;
+    material_id?: number;
+    item_type?: 'TOOL' | 'MATERIAL';
+    condition_status?: string;
+  }) => api.get('/inventory', { params }),
+  getTools: () => api.get('/inventory/tools'),
+  getMaterials: () => api.get('/inventory/materials'),
+  getById: (id: number) => api.get(`/inventory/${id}`),
+  create: (data: any) => api.post('/inventory', data),
+  update: (id: number, data: any) => api.put(`/inventory/${id}`, data),
+  delete: (id: number) => api.delete(`/inventory/${id}`),
+  getStats: () => api.get('/inventory/stats'),
+};
+
 export default api;

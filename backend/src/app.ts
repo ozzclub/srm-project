@@ -12,6 +12,8 @@ import movementTypeRoutes from './modules/movement-type/movement-type.routes';
 import movementLogRoutes from './modules/movement-log/movement-log.routes';
 import documentRoutes from './modules/document/document.routes';
 import mtoRoutes from './modules/mto/mto.routes';
+import sppRoutes from './modules/spp/spp.routes';
+import inventoryRoutes from './modules/inventory/inventory.routes';
 
 const app: Application = express();
 
@@ -41,6 +43,8 @@ app.use('/api/movement-types', movementTypeRoutes);
 app.use('/api/movement-log', movementLogRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/mto', mtoRoutes);
+app.use('/api/spp', sppRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
