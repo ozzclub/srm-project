@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Package } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { materialApi } from '@/lib/api';
+import { Plus, Trash2 } from 'lucide-react';
 import type { CreateSPPItemDTO } from '@/types/spp.types';
 
 interface SPPItemsFormProps {
@@ -14,19 +12,10 @@ interface SPPItemsFormProps {
 
 interface FormItem extends CreateSPPItemDTO {
   _tempId: string;
-  material_id_temp?: number;
 }
 
 export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPItemsFormProps) {
   const [formItems, setFormItems] = useState<FormItem[]>([]);
-
-  // Fetch materials for dropdown
-  const { data: materialsData } = useQuery({
-    queryKey: ['materials'],
-    queryFn: () => materialApi.getAll().then((res) => res.data),
-  });
-
-  const materials = materialsData?.data || [];
 
   // Initialize form items
   useEffect(() => {
@@ -51,6 +40,7 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
       unit: 'pcs',
       request_qty: 0,
       date_req: new Date().toLocaleDateString('en-CA'),
+      item_type: 'MATERIAL',
     };
     const updatedItems = [...formItems, newItem];
     setFormItems(updatedItems);
@@ -69,19 +59,7 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
   const updateField = (tempId: string, field: keyof CreateSPPItemDTO, value: any) => {
     const updatedItems = formItems.map((item) => {
       if (item._tempId === tempId) {
-        const updatedItem = { ...item, [field]: value };
-
-        // Auto-fill from material selection
-        if (field === 'material_id') {
-          const selectedMaterial = materials.find((m: any) => m.id === parseInt(value));
-          if (selectedMaterial) {
-            updatedItem.list_item = selectedMaterial.description || '';
-            updatedItem.description = selectedMaterial.remarks || '';
-            updatedItem.unit = selectedMaterial.unit || 'pcs';
-          }
-        }
-
-        return updatedItem;
+        return { ...item, [field]: value };
       }
       return item;
     });
@@ -121,13 +99,13 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
                 No
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Material
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 List Item
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Description
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-48">
+                Remarks (Keperluan)
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
                 Unit
@@ -135,8 +113,11 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
                 Request Qty
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-40">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
                 Date Required
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-48">
+                Item Type
               </th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">
                 Actions
@@ -150,25 +131,11 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
                   <span className="text-sm font-medium text-gray-900">{index + 1}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <select
-                    value={item.material_id || ''}
-                    onChange={(e) => updateField(item._tempId, 'material_id', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  >
-                    <option value="">Select material...</option>
-                    {materials.map((material: any) => (
-                      <option key={material.id} value={material.id}>
-                        {material.material_code} - {material.description}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3">
                   <input
                     type="text"
                     value={item.list_item || ''}
                     onChange={(e) => updateField(item._tempId, 'list_item', e.target.value)}
-                    placeholder="Material name (e.g., Steel Pipe)"
+                    placeholder="Enter item name (e.g., Steel Pipe)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     required
                   />
@@ -181,6 +148,15 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
                     placeholder="Item description"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     required
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <textarea
+                    value={item.remarks || ''}
+                    onChange={(e) => updateField(item._tempId, 'remarks', e.target.value)}
+                    placeholder="Untuk keperluan apa..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -216,6 +192,32 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
                     required
                   />
                 </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateField(item._tempId, 'item_type', 'TOOL')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition ${
+                        item.item_type === 'TOOL'
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      🔧 Tool
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateField(item._tempId, 'item_type', 'MATERIAL')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition ${
+                        item.item_type === 'MATERIAL'
+                          ? 'bg-green-50 border-green-300 text-green-700'
+                          : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      📦 Consumable
+                    </button>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-center">
                   <button
                     type="button"
@@ -250,27 +252,12 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Material</label>
-              <select
-                value={item.material_id || ''}
-                onChange={(e) => updateField(item._tempId, 'material_id', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">Select material...</option>
-                {materials.map((material: any) => (
-                  <option key={material.id} value={material.id}>
-                    {material.material_code} - {material.description}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">List Item (Material Name)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">List Item (Item Name)</label>
               <input
                 type="text"
                 value={item.list_item || ''}
                 onChange={(e) => updateField(item._tempId, 'list_item', e.target.value)}
+                placeholder="Enter item name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 required
               />
@@ -284,6 +271,19 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
                 onChange={(e) => updateField(item._tempId, 'description', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Remarks <span className="text-gray-400 font-normal">(Keperluan)</span>
+              </label>
+              <textarea
+                value={item.remarks || ''}
+                onChange={(e) => updateField(item._tempId, 'remarks', e.target.value)}
+                placeholder="Untuk keperluan apa..."
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
               />
             </div>
 
@@ -311,6 +311,34 @@ export default function SPPItemsForm({ items, onChange, mode = 'create' }: SPPIt
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   required
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Item Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateField(item._tempId, 'item_type', 'TOOL')}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg border transition ${
+                    item.item_type === 'TOOL'
+                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🔧 Tool
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField(item._tempId, 'item_type', 'MATERIAL')}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg border transition ${
+                    item.item_type === 'MATERIAL'
+                      ? 'bg-green-50 border-green-300 text-green-700'
+                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  📦 Consumable
+                </button>
               </div>
             </div>
 

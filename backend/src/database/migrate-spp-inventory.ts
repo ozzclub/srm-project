@@ -11,14 +11,14 @@ export async function migrateSPPAndInventory() {
   try {
     const columns = await MigrationService.getColumns('users');
     const roleColumn = columns.find(col => col.Field === 'role');
-    
+
     if (roleColumn) {
       // Check if role enum already includes new roles
-      if (!roleColumn.Type.includes('workshop') || !roleColumn.Type.includes('material_site')) {
+      if (!roleColumn.Type.includes('workshop') || !roleColumn.Type.includes('material_site') || !roleColumn.Type.includes('site')) {
         console.log('  🔄 Updating users table role enum...');
         await pool.query(`
-          ALTER TABLE users 
-          MODIFY COLUMN role ENUM('admin', 'staff', 'workshop', 'material_site') DEFAULT 'staff'
+          ALTER TABLE users
+          MODIFY COLUMN role ENUM('admin', 'staff', 'site', 'workshop', 'material_site') DEFAULT 'staff'
         `);
         console.log('  ✅ Updated users role enum');
       } else {
@@ -38,6 +38,7 @@ export async function migrateSPPAndInventory() {
           spp_number VARCHAR(20) UNIQUE NOT NULL,
           request_date DATE NOT NULL,
           requested_by VARCHAR(100) NOT NULL,
+          created_by_role ENUM('site', 'workshop') DEFAULT 'site',
           status ENUM('DRAFT', 'PENDING', 'APPROVED', 'IN_TRANSIT', 'RECEIVED', 'COMPLETED', 'CANCELLED') DEFAULT 'DRAFT',
           notes TEXT,
           created_by INT,
@@ -49,6 +50,15 @@ export async function migrateSPPAndInventory() {
       tablesCreated++;
     } else {
       console.log('  ✅ spp_requests table exists');
+      // Add created_by_role column if it doesn't exist
+      const columns = await MigrationService.getColumns('spp_requests');
+      if (!columns.find(col => col.Field === 'created_by_role')) {
+        await pool.query(`
+          ALTER TABLE spp_requests
+          ADD COLUMN created_by_role ENUM('site', 'workshop') DEFAULT 'site' AFTER requested_by
+        `);
+        console.log('  ✅ Added created_by_role column to spp_requests');
+      }
     }
   } catch (error: any) {
     console.log(`  ⚠️  spp_requests table check skipped: ${error.message}`);
@@ -72,6 +82,7 @@ export async function migrateSPPAndInventory() {
           request_status ENUM('PENDING', 'PARTIAL', 'FULFILLED') DEFAULT 'PENDING',
           date_req DATE NOT NULL,
           item_status ENUM('PENDING', 'APPROVED', 'IN_TRANSIT', 'RECEIVED') DEFAULT 'PENDING',
+          delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT') DEFAULT 'NOT_SENT',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (spp_id) REFERENCES spp_requests(id) ON DELETE CASCADE,
@@ -81,6 +92,15 @@ export async function migrateSPPAndInventory() {
       tablesCreated++;
     } else {
       console.log('  ✅ spp_items table exists');
+      // Add delivery_status column if it doesn't exist
+      const columns = await MigrationService.getColumns('spp_items');
+      if (!columns.find(col => col.Field === 'delivery_status')) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          ADD COLUMN delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT') DEFAULT 'NOT_SENT' AFTER item_status
+        `);
+        console.log('  ✅ Added delivery_status column to spp_items');
+      }
     }
   } catch (error: any) {
     console.log(`  ⚠️  spp_items table check skipped: ${error.message}`);
@@ -94,7 +114,7 @@ export async function migrateSPPAndInventory() {
           id INT AUTO_INCREMENT PRIMARY KEY,
           spp_id INT NOT NULL,
           approved_by INT,
-          approval_role ENUM('workshop', 'material_site') NOT NULL,
+          approval_role ENUM('site', 'workshop', 'material_site') NOT NULL,
           approval_status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
           approval_notes TEXT,
           approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -107,6 +127,16 @@ export async function migrateSPPAndInventory() {
       tablesCreated++;
     } else {
       console.log('  ✅ spp_approvals table exists');
+      // Update approval_role enum to include 'site'
+      const columns = await MigrationService.getColumns('spp_approvals');
+      const roleColumn = columns.find(col => col.Field === 'approval_role');
+      if (roleColumn && !roleColumn.Type.includes('site')) {
+        await pool.query(`
+          ALTER TABLE spp_approvals
+          MODIFY COLUMN approval_role ENUM('site', 'workshop', 'material_site') NOT NULL
+        `);
+        console.log('  ✅ Updated approval_role enum to include site');
+      }
     }
   } catch (error: any) {
     console.log(`  ⚠️  spp_approvals table check skipped: ${error.message}`);

@@ -9,6 +9,9 @@ import {
   SPPQueryParams,
   ApproveSPPDTO,
   ReceiveSPPItemDTO,
+  UpdateDeliveryDTO,
+  VerifyDeliveryDTO,
+  DirectReceiveDTO,
 } from '../../types/spp.types';
 
 export class SPPController {
@@ -568,6 +571,280 @@ export class SPPController {
       res.status(500).json({
         success: false,
         message: 'Failed to generate template',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // SITE approve SPP request
+  static async siteApprove(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id);
+      const data = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(id)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP ID',
+        });
+        return;
+      }
+
+      if (!data.approval_status) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required field: approval_status',
+        });
+        return;
+      }
+
+      const result = await SPPService.approveBySite(id, userId, data);
+
+      res.json({
+        success: true,
+        data: result,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error('Error in SITE approval:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to process SITE approval',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // Update item delivery (Workshop update)
+  static async updateDelivery(req: Request, res: Response): Promise<void> {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const data: UpdateDeliveryDTO = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(itemId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP item ID',
+        });
+        return;
+      }
+
+      const item = await SPPService.updateItemDelivery(itemId, userId, data);
+
+      if (!item) {
+        res.status(404).json({
+          success: false,
+          message: 'SPP item not found',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: item,
+        message: 'SPP item delivery updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating SPP item delivery:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update SPP item delivery',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // SITE verify delivery from Workshop
+  static async verifyDelivery(req: Request, res: Response): Promise<void> {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const data: VerifyDeliveryDTO = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(itemId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP item ID',
+        });
+        return;
+      }
+
+      if (!data.action) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required field: action',
+        });
+        return;
+      }
+
+      const item = await SPPService.verifyDeliveryBySite(itemId, userId, data);
+
+      if (!item) {
+        res.status(404).json({
+          success: false,
+          message: 'SPP item not found',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: item,
+        message: `Delivery ${data.action.toLowerCase()}ed successfully`,
+      });
+    } catch (error) {
+      console.error('Error verifying delivery:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to verify delivery',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // SITE direct receive (no Workshop)
+  static async directReceive(req: Request, res: Response): Promise<void> {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const data: DirectReceiveDTO = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(itemId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP item ID',
+        });
+        return;
+      }
+
+      if (data.receive_qty === undefined || data.receive_qty < 0) {
+        res.status(400).json({
+          success: false,
+          message: 'receive_qty must be a positive number',
+        });
+        return;
+      }
+
+      const item = await SPPService.directReceiveBySite(itemId, userId, data);
+
+      if (!item) {
+        res.status(404).json({
+          success: false,
+          message: 'SPP item not found',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: item,
+        message: 'Items received and added to inventory successfully',
+      });
+    } catch (error) {
+      console.error('Error in direct receive:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to process direct receive',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // SITE update item type (TOOL or MATERIAL)
+  static async updateItemType(req: Request, res: Response): Promise<void> {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const { item_type } = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(itemId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP item ID',
+        });
+        return;
+      }
+
+      if (!item_type || !['TOOL', 'MATERIAL'].includes(item_type)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid item_type. Must be TOOL or MATERIAL',
+        });
+        return;
+      }
+
+      const item = await SPPService.updateItemType(itemId, userId, item_type);
+
+      if (!item) {
+        res.status(404).json({
+          success: false,
+          message: 'SPP item not found',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: item,
+        message: `Item type updated to ${item_type} successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating item type:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update item type',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }

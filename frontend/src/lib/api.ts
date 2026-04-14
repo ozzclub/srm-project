@@ -221,7 +221,13 @@ export const sppApi = {
     }),
   updateStatus: (id: number, status: string) => api.put(`/spp/${id}/status`, { status }),
   approve: (id: number, data: any) => api.post(`/spp/${id}/approve`, data),
+  siteApprove: (id: number, data: any) => api.post(`/spp/${id}/site-approve`, data),
   receiveItem: (itemId: number, data: any) => api.post(`/spp/items/${itemId}/receive`, data),
+  updateDelivery: (itemId: number, data: any) => api.put(`/spp/items/${itemId}/delivery`, data),
+  verifyDelivery: (itemId: number, data: any) => api.post(`/spp/items/${itemId}/verify`, data),
+  directReceive: (itemId: number, data: any) => api.post(`/spp/items/${itemId}/direct-receive`, data),
+  updateItemType: (itemId: number, data: { item_type: 'TOOL' | 'MATERIAL' }) => 
+    api.patch(`/spp/items/${itemId}/item-type`, data),
   addItem: (sppId: number, itemData: any) => api.post(`/spp/${sppId}/items`, itemData),
   updateItem: (itemId: number, data: any) => api.put(`/spp/items/${itemId}`, data),
   deleteItem: (itemId: number) => api.delete(`/spp/items/${itemId}`),

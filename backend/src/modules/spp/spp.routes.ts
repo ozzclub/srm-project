@@ -21,9 +21,17 @@ router.post('/', SPPController.create);
 // Dynamic routes with specific paths (more specific first)
 router.get('/:id/fulfillment', SPPController.getFulfillmentStatus);
 router.post('/:id/approve', SPPController.approve);
+router.post('/:id/site-approve', SPPController.siteApprove);
 router.post('/:id/items', SPPController.addItem);
 router.put('/items/:itemId', SPPController.updateItem);
 router.post('/items/:itemId/receive', SPPController.receiveItem);
+router.put('/items/:itemId/delivery', SPPController.updateDelivery);
+
+// NEW: SITE verification and direct receive routes
+router.post('/items/:itemId/verify', SPPController.verifyDelivery);
+router.post('/items/:itemId/direct-receive', SPPController.directReceive);
+router.patch('/items/:itemId/item-type', SPPController.updateItemType);
+
 router.delete('/items/:itemId', SPPController.deleteItem);
 
 // General dynamic routes (least specific - must be last)

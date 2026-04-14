@@ -4,7 +4,7 @@ export interface User {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'staff' | 'workshop' | 'material_site';
+  role: 'admin' | 'staff' | 'site' | 'workshop' | 'material_site';
   created_at: Date;
 }
 
@@ -13,7 +13,7 @@ export interface UserResponse {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'staff' | 'workshop' | 'material_site';
+  role: 'admin' | 'staff' | 'site' | 'workshop' | 'material_site';
   created_at: Date;
 }
 
@@ -21,7 +21,7 @@ export interface UserResponse {
 export interface JwtPayload {
   id: number;
   email: string;
-  role: 'admin' | 'staff' | 'workshop' | 'material_site';
+  role: 'admin' | 'staff' | 'site' | 'workshop' | 'material_site';
   iat?: number;
   exp?: number;
 }

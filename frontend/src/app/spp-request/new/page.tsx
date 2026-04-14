@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sppApi } from '@/lib/api';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { SPPItemsForm } from '@/components/spp';
-import { ArrowLeft, Save, Send } from 'lucide-react';
+import { ArrowLeft, Save, Send, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import type { CreateSPPItemDTO } from '@/types/spp.types';
 
@@ -82,6 +82,7 @@ export default function NewSPPRequestPage() {
     const data = {
       request_date: requestDate,
       requested_by: requestedBy,
+      created_by_role: 'site', // SITE creates this request
       notes: notes || undefined,
       status,
       items: items.map((item, index) => ({
@@ -104,9 +105,29 @@ export default function NewSPPRequestPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">New SPP Request</h1>
-            <p className="text-gray-600 mt-1">Create a new item request</p>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">New SPP Request</h1>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                <MapPin className="w-3 h-3" />
+                From SITE
+              </span>
+            </div>
+            <p className="text-gray-600 mt-1">Create a material request from SITE to Workshop</p>
+          </div>
+        </div>
+
+        {/* Info Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex gap-3">
+            <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-blue-900">SITE Request Workflow</h4>
+              <p className="text-sm text-blue-800 mt-1">
+                This request will be sent from <strong>SITE</strong> to <strong>Workshop</strong> for fulfillment. 
+                Workshop will update delivery status per item, and SITE will confirm receipt.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -148,7 +169,7 @@ export default function NewSPPRequestPage() {
                   type="text"
                   value={requestedBy}
                   onChange={(e) => setRequestedBy(e.target.value)}
-                  placeholder="Enter your name or team"
+                  placeholder="Enter SITE name or team"
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition ${
                     errors.requestedBy ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
@@ -165,7 +186,7 @@ export default function NewSPPRequestPage() {
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional notes or instructions..."
+                  placeholder="Additional notes or instructions for Workshop..."
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition hover:border-gray-400 resize-none"
                 />

@@ -4,6 +4,7 @@ export interface SPPRequest {
   spp_number: string;
   request_date: string;
   requested_by: string;
+  created_by_role: 'site' | 'workshop';
   status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'IN_TRANSIT' | 'RECEIVED' | 'COMPLETED' | 'CANCELLED';
   notes: string | null;
   created_by: number | null;
@@ -19,13 +20,19 @@ export interface SPPItem {
   list_item_number: number;
   list_item: string;
   description: string;
+  remarks?: string | null;
   unit: string;
   request_qty: number;
   receive_qty: number;
   remaining_qty: number;
   request_status: 'PENDING' | 'PARTIAL' | 'FULFILLED';
   date_req: string;
-  item_status: 'PENDING' | 'APPROVED' | 'IN_TRANSIT' | 'RECEIVED';
+  item_type: 'TOOL' | 'MATERIAL';
+  item_status: 'PENDING' | 'IN_TRANSIT' | 'PENDING_VERIFICATION' | 'RECEIVED';
+  delivery_status: 'NOT_SENT' | 'SENT' | 'VERIFIED' | 'REJECTED';
+  verified_by?: number | null;
+  verified_at?: string | null;
+  rejection_reason?: string | null;
   created_at: string;
   material?: {
     id: number;
@@ -46,7 +53,7 @@ export interface SPPApproval {
   id: number;
   spp_id: number;
   approved_by: number;
-  approval_role: 'workshop' | 'material_site';
+  approval_role: 'site' | 'workshop' | 'material_site';
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED';
   approval_notes: string | null;
   approved_at: string;
@@ -80,6 +87,7 @@ export interface CreateSPPRequestDTO {
   spp_number?: string;
   request_date: string;
   requested_by: string;
+  created_by_role?: 'site' | 'workshop';
   notes?: string;
   created_by?: number;
   items: {
@@ -87,9 +95,11 @@ export interface CreateSPPRequestDTO {
     list_item_number?: number;
     list_item: string;
     description: string;
+    remarks?: string;
     unit: string;
     request_qty: number;
     date_req: string;
+    item_type?: 'TOOL' | 'MATERIAL';
   }[];
 }
 
@@ -107,9 +117,11 @@ export interface CreateSPPItemDTO {
   list_item_number?: number;
   list_item: string;
   description: string;
+  remarks?: string;
   unit: string;
   request_qty: number;
   date_req: string;
+  item_type?: 'TOOL' | 'MATERIAL';
 }
 
 // Update SPP Item DTO
@@ -117,11 +129,14 @@ export interface UpdateSPPItemDTO {
   material_id?: number;
   list_item?: string;
   description?: string;
+  remarks?: string;
   unit?: string;
   request_qty?: number;
   receive_qty?: number;
   date_req?: string;
-  item_status?: 'PENDING' | 'APPROVED' | 'IN_TRANSIT' | 'RECEIVED';
+  item_type?: 'TOOL' | 'MATERIAL';
+  item_status?: 'PENDING' | 'IN_TRANSIT' | 'PENDING_VERIFICATION' | 'RECEIVED';
+  delivery_status?: 'NOT_SENT' | 'SENT' | 'VERIFIED' | 'REJECTED';
 }
 
 // SPP Query Params
@@ -156,7 +171,7 @@ export interface SPPFulfillmentStatus {
 
 // Approval DTO
 export interface ApproveSPPDTO {
-  approval_role: 'workshop' | 'material_site';
+  approval_role: 'site' | 'workshop' | 'material_site';
   approval_status: 'APPROVED' | 'REJECTED';
   approval_notes?: string;
 }
@@ -165,6 +180,38 @@ export interface ApproveSPPDTO {
 export interface ReceiveSPPItemDTO {
   receive_qty: number;
   item_status?: 'IN_TRANSIT' | 'RECEIVED';
+}
+
+// Delivery Update DTO
+export interface UpdateDeliveryDTO {
+  receive_qty?: number;
+  delivery_status?: 'NOT_SENT' | 'SENT';
+  item_status?: 'PENDING' | 'IN_TRANSIT' | 'PENDING_VERIFICATION';
+  notes?: string;
+}
+
+// SITE Approval DTO
+export interface SiteApproveSPPDTO {
+  approval_status: 'APPROVED' | 'REJECTED';
+  approval_notes?: string;
+  items?: {
+    item_id: number;
+    receive_qty: number;
+  }[];
+}
+
+// Verify Delivery DTO (for SITE to verify Workshop delivery)
+export interface VerifyDeliveryDTO {
+  action: 'VERIFY' | 'REJECT' | 'ADJUST';
+  actual_qty?: number;
+  rejection_reason?: string;
+  notes?: string;
+}
+
+// Direct Receive DTO (for SITE to directly receive without Workshop)
+export interface DirectReceiveDTO {
+  receive_qty: number;
+  notes?: string;
 }
 
 // Inventory Query Params

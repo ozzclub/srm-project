@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sppApi } from '@/lib/api';
+import { getCurrentUser } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { SPPStatusBadge, SPPApprovalTimeline, SPPApprovalSection } from '@/components/spp';
-import { ArrowLeft, Edit2, Trash2, Package, Calendar, User, CheckCircle, XCircle } from 'lucide-react';
+import {
+  SPPStatusBadge,
+  SPPApprovalTimeline,
+  SPPSiteApprovalSection,
+  SPPWorkshopDeliverySection,
+  SPPItemEditModal
+} from '@/components/spp';
+import { ArrowLeft, Package, Calendar, User, MapPin, Building2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { formatDateLocal } from '@/utils/date';
+import type { User as UserType } from '@/types';
 
 export default function SPPDetailPage() {
   const params = useParams();
@@ -17,6 +25,16 @@ export default function SPPDetailPage() {
   const sppId = parseInt(params.id as string);
 
   const [activeTab, setActiveTab] = useState<'items' | 'approvals'>('items');
+  const [userRole, setUserRole] = useState<string>('');
+  const [editingItem, setEditingItem] = useState<any>(null);
+  
+  // Get user role from auth
+  useEffect(() => {
+    const user = getCurrentUser() as UserType | null;
+    if (user) {
+      setUserRole(user.role);
+    }
+  }, []);
 
   // Fetch SPP detail
   const { data: sppData, isLoading } = useQuery({
@@ -24,51 +42,83 @@ export default function SPPDetailPage() {
     queryFn: () => sppApi.getById(sppId).then((res) => res.data.data),
   });
 
-  // Approve mutation
-  const approveMutation = useMutation({
-    mutationFn: (data: any) => sppApi.approve(sppId, data),
+  // SITE approve mutation
+  const siteApproveMutation = useMutation({
+    mutationFn: (data: any) => sppApi.siteApprove(sppId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
       queryClient.invalidateQueries({ queryKey: ['spp-requests'] });
     },
   });
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: () => sppApi.delete(sppId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spp-requests'] });
-      router.push('/spp-request');
-    },
-  });
-
-  // Update receive qty mutation
-  const receiveMutation = useMutation({
+  // Workshop delivery update mutation
+  const deliveryMutation = useMutation({
     mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
-      sppApi.receiveItem(itemId, data),
+      sppApi.updateDelivery(itemId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
     },
   });
 
-  const handleApprove = async (data: any) => {
-    await approveMutation.mutateAsync(data);
+  // SITE verify delivery mutation
+  const verifyMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
+      sppApi.verifyDelivery(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
+    },
+  });
+
+  // SITE direct receive mutation
+  const directReceiveMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
+      sppApi.directReceive(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
+    },
+  });
+
+  // SITE update item type mutation
+  const itemTypeMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
+      sppApi.updateItemType(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
+    },
+  });
+
+  // Update SPP item mutation
+  const updateItemMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
+      sppApi.updateItem(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
+    },
+  });
+
+  const handleSiteApprove = async (data: any) => {
+    await siteApproveMutation.mutateAsync(data);
   };
 
-  const handleUpdateReceive = async (itemId: number, receiveQty: number) => {
-    await receiveMutation.mutateAsync({
-      itemId,
-      data: {
-        receive_qty: receiveQty,
-        item_status: receiveQty > 0 ? 'IN_TRANSIT' : 'PENDING',
-      },
-    });
+  const handleUpdateDelivery = async (itemId: number, data: any) => {
+    await deliveryMutation.mutateAsync({ itemId, data });
   };
 
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this SPP request?')) {
-      await deleteMutation.mutate();
-    }
+  const handleVerifyDelivery = async (itemId: number, data: any) => {
+    await verifyMutation.mutateAsync({ itemId, data });
+  };
+
+  const handleDirectReceive = async (itemId: number, data: any) => {
+    await directReceiveMutation.mutateAsync({ itemId, data });
+  };
+
+  const handleItemTypeChange = async (itemId: number, itemType: 'TOOL' | 'MATERIAL') => {
+    await itemTypeMutation.mutateAsync({ itemId, data: { item_type: itemType } });
+  };
+
+  const handleUpdateItem = async (itemId: number, data: any) => {
+    await updateItemMutation.mutateAsync({ itemId, data });
+    setEditingItem(null);
   };
 
   if (isLoading) {
@@ -94,12 +144,9 @@ export default function SPPDetailPage() {
   }
 
   const spp = sppData;
-  const totalRequested = spp.items?.reduce((sum: number, item: any) => sum + item.request_qty, 0) || 0;
-  const totalReceived = spp.items?.reduce((sum: number, item: any) => sum + item.receive_qty, 0) || 0;
+  const totalRequested = spp.items?.reduce((sum: any, item: any) => sum + item.request_qty, 0) || 0;
+  const totalReceived = spp.items?.reduce((sum: any, item: any) => sum + item.receive_qty, 0) || 0;
   const fulfillmentPercentage = totalRequested > 0 ? (totalReceived / totalRequested) * 100 : 0;
-
-  // Mock user role - replace with actual user role from auth
-  const userRole = 'material_site'; // This should come from your auth system
 
   return (
     <DashboardLayout>
@@ -117,31 +164,20 @@ export default function SPPDetailPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-gray-900 font-mono">{spp.spp_number}</h1>
                 <SPPStatusBadge status={spp.status} />
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
+                  spp.created_by_role === 'site' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-purple-100 text-purple-700'
+                }`}>
+                  {spp.created_by_role === 'site' ? (
+                    <><MapPin className="w-3 h-3" /> From SITE</>
+                  ) : (
+                    <><Building2 className="w-3 h-3" /> From Workshop</>
+                  )}
+                </span>
               </div>
               <p className="text-gray-600 mt-1">SPP Request Details</p>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            {spp.status === 'DRAFT' && (
-              <>
-                <Link
-                  href={`/spp-request/${spp.id}/edit`}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>Edit</span>
-                </Link>
-                <button
-                  onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
 
@@ -225,6 +261,32 @@ export default function SPPDetailPage() {
           </div>
         </div>
 
+        {/* Role-Based Action Sections */}
+        {!userRole ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+            <p className="text-gray-600">Loading user role...</p>
+          </div>
+        ) : userRole === 'site' || userRole === 'material_site' ? (
+          <SPPSiteApprovalSection
+            spp={spp}
+            onSiteApprove={handleSiteApprove}
+            onVerifyDelivery={handleVerifyDelivery}
+            onDirectReceive={handleDirectReceive}
+            onItemTypeChange={handleItemTypeChange}
+          />
+        ) : userRole === 'workshop' ? (
+          <SPPWorkshopDeliverySection
+            spp={spp}
+            onUpdateDelivery={handleUpdateDelivery}
+          />
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-yellow-800">
+              <strong>Note:</strong> Your role ({userRole}) does not have specific actions for this page.
+            </p>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="border-b border-gray-200">
@@ -247,7 +309,7 @@ export default function SPPDetailPage() {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Approval History
+                Approval History ({spp.approvals?.length || 0})
               </button>
             </nav>
           </div>
@@ -268,6 +330,9 @@ export default function SPPDetailPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Description
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
+                        Remarks
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Unit
                       </th>
@@ -281,8 +346,16 @@ export default function SPPDetailPage() {
                         Remaining
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Delivery
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Status
                       </th>
+                      {(userRole === 'site' || userRole === 'material_site') && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -292,7 +365,16 @@ export default function SPPDetailPage() {
                           {index + 1}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.list_item}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{item.description}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                          <div className="truncate" title={item.description}>{item.description}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 max-w-xs hidden lg:table-cell">
+                          {item.remarks ? (
+                            <div className="truncate" title={item.remarks}>{item.remarks}</div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{item.unit}</td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {item.request_qty}
@@ -302,6 +384,24 @@ export default function SPPDetailPage() {
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-orange-600">
                           {item.remaining_qty}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            item.delivery_status === 'SENT' || item.delivery_status === 'PENDING_VERIFICATION'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : item.delivery_status === 'VERIFIED'
+                              ? 'bg-green-100 text-green-700'
+                              : item.delivery_status === 'REJECTED'
+                              ? 'bg-red-100 text-red-700'
+                              : item.delivery_status === 'PARTIAL'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {item.delivery_status === 'SENT' ? 'Sent - Pending Verification' : 
+                             item.delivery_status === 'VERIFIED' ? 'Verified' :
+                             item.delivery_status === 'REJECTED' ? 'Rejected' :
+                             item.delivery_status || 'Not Sent'}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -316,6 +416,17 @@ export default function SPPDetailPage() {
                             {item.request_status}
                           </span>
                         </td>
+                        {(userRole === 'site' || userRole === 'material_site') && (
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => setEditingItem(item)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                              title="Edit Item"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -330,13 +441,15 @@ export default function SPPDetailPage() {
           </div>
         </div>
 
-        {/* Approval Section (Role-based) */}
-        <SPPApprovalSection
-          spp={spp}
-          userRole={userRole}
-          onApprove={handleApprove}
-          onUpdateReceive={handleUpdateReceive}
-        />
+        {/* Edit Item Modal */}
+        {editingItem && (
+          <SPPItemEditModal
+            item={editingItem}
+            isOpen={!!editingItem}
+            onClose={() => setEditingItem(null)}
+            onSave={handleUpdateItem}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

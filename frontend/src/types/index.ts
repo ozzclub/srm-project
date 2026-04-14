@@ -3,7 +3,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'staff';
+  role: 'admin' | 'staff' | 'site' | 'workshop' | 'material_site';
   created_at: string;
 }
 
@@ -11,7 +11,7 @@ export interface UserFormData {
   name: string;
   email: string;
   password?: string;
-  role: 'admin' | 'staff';
+  role: 'admin' | 'staff' | 'site' | 'workshop' | 'material_site';
 }
 
 export interface LoginFormData {

@@ -104,12 +104,20 @@ export class InventoryService {
   // Get tools only
   static async getTools(): Promise<Inventory[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT 
+      `SELECT
         i.*,
+        si.list_item,
+        si.description,
+        si.unit,
+        si.request_qty,
+        sr.spp_number,
+        sr.id as spp_request_id,
         m.material_code,
         m.description as material_description,
         l.location_name
       FROM inventory i
+      LEFT JOIN spp_items si ON i.spp_item_id = si.id
+      LEFT JOIN spp_requests sr ON si.spp_id = sr.id
       LEFT JOIN materials m ON i.material_id = m.id
       LEFT JOIN locations l ON i.location_id = l.id
       WHERE i.item_type = 'TOOL'
@@ -119,12 +127,17 @@ export class InventoryService {
     return rows.map((row: any) => ({
       id: row.id,
       spp_item_id: row.spp_item_id,
+      spp_request_id: row.spp_request_id,
       material_id: row.material_id,
       item_type: row.item_type,
+      list_item: row.list_item,
+      description: row.description,
+      unit: row.unit,
       quantity: parseFloat(row.quantity),
       condition_status: row.condition_status,
       location_id: row.location_id,
       received_from_spp: row.received_from_spp,
+      spp_number: row.spp_number,
       received_at: row.received_at,
       created_at: row.created_at,
     }));
@@ -133,12 +146,20 @@ export class InventoryService {
   // Get materials only (consumables)
   static async getMaterials(): Promise<Inventory[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT 
+      `SELECT
         i.*,
+        si.list_item,
+        si.description,
+        si.unit,
+        si.request_qty,
+        sr.spp_number,
+        sr.id as spp_request_id,
         m.material_code,
         m.description as material_description,
         l.location_name
       FROM inventory i
+      LEFT JOIN spp_items si ON i.spp_item_id = si.id
+      LEFT JOIN spp_requests sr ON si.spp_id = sr.id
       LEFT JOIN materials m ON i.material_id = m.id
       LEFT JOIN locations l ON i.location_id = l.id
       WHERE i.item_type = 'MATERIAL'
@@ -148,12 +169,17 @@ export class InventoryService {
     return rows.map((row: any) => ({
       id: row.id,
       spp_item_id: row.spp_item_id,
+      spp_request_id: row.spp_request_id,
       material_id: row.material_id,
       item_type: row.item_type,
+      list_item: row.list_item,
+      description: row.description,
+      unit: row.unit,
       quantity: parseFloat(row.quantity),
       condition_status: row.condition_status,
       location_id: row.location_id,
       received_from_spp: row.received_from_spp,
+      spp_number: row.spp_number,
       received_at: row.received_at,
       created_at: row.created_at,
     }));
