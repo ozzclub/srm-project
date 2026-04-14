@@ -1299,9 +1299,13 @@ export class SPPService {
 
     const totalItems = itemRows.length;
     
-    // Count items by verification state
+    // Count items by verification state and fulfillment
     const verifiedItems = itemRows.filter((item: any) => 
       item.item_status === 'RECEIVED'  // SITE verified
+    ).length;
+
+    const fullyFulfilledItems = itemRows.filter((item: any) => 
+      parseFloat(item.receive_qty) >= parseFloat(item.request_qty)
     ).length;
     
     const pendingVerificationItems = itemRows.filter((item: any) => 
@@ -1312,17 +1316,14 @@ export class SPPService {
       item.delivery_status === 'REJECTED'  // SITE rejected
     ).length;
 
-    // Determine new status based on actual verification state
+    // Determine new status based on actual verification state and fulfillment
     let newStatus = 'PENDING';
 
-    if (verifiedItems === 0 && pendingVerificationItems === 0) {
-      // No items sent yet
-      newStatus = 'PENDING';
-    } else if (verifiedItems === totalItems) {
-      // ALL items SITE-verified → COMPLETED
+    if (verifiedItems === totalItems && fullyFulfilledItems === totalItems) {
+      // ALL items SITE-verified AND 100% Fulfilled → COMPLETED
       newStatus = 'COMPLETED';
     } else if (pendingVerificationItems > 0 || verifiedItems > 0) {
-      // Some items sent/verified → IN_TRANSIT
+      // Some items sent/verified but not yet 100% total fulfillment → IN_TRANSIT
       newStatus = 'IN_TRANSIT';
     } else if (rejectedItems > 0) {
       // Items rejected → back to PENDING
