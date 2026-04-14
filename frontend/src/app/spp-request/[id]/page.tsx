@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sppApi } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
@@ -360,7 +360,8 @@ export default function SPPDetailPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {spp.items?.map((item: any, index: number) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
+                      <React.Fragment key={item.id}>
+                        <tr className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {index + 1}
                         </td>
@@ -428,6 +429,33 @@ export default function SPPDetailPage() {
                           </td>
                         )}
                       </tr>
+                      
+                      {/* Rejection Reason Sub-Row */}
+                      {item.delivery_status === 'REJECTED' && item.rejection_reason && (
+                        <tr className="bg-red-50">
+                          <td colSpan={9} className="px-4 py-3">
+                            <div className="flex items-start gap-2">
+                              <span className="text-red-600 font-semibold text-sm">❌ Ditolak:</span>
+                              <div className="flex-1">
+                                <p className="text-sm text-red-700">
+                                  {item.rejection_reason}
+                                </p>
+                                {item.verified_at && (
+                                  <p className="text-xs text-red-600 mt-1">
+                                    {item.verified_by ? 'Oleh: SITE User • ' : ''}
+                                    {new Date(item.verified_at).toLocaleDateString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'long',
+                                      year: 'numeric'
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

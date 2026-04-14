@@ -101,13 +101,35 @@ export default function SPPWorkshopDeliverySection({
                         ⏳ Pending Verification
                       </span>
                     )}
-                    {item.delivery_status === 'REJECTED' && item.rejection_reason && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700" title={item.rejection_reason}>
+                    {item.delivery_status === 'REJECTED' && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                         ❌ Rejected
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-gray-600">{item.description}</p>
+                  
+                  {/* Rejection Reason Display */}
+                  {item.delivery_status === 'REJECTED' && item.rejection_reason && (
+                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-xs font-semibold text-red-900 mb-1">
+                        ❌ Ditolak oleh SITE
+                      </p>
+                      <p className="text-xs text-red-700">
+                        <strong>Alasan Penolakan:</strong> {item.rejection_reason}
+                      </p>
+                      {item.verified_at && (
+                        <p className="text-xs text-red-600 mt-1">
+                          <strong>Tanggal:</strong> {new Date(item.verified_at).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="flex gap-4 mt-1 text-xs text-gray-500">
                     <span>Requested: <strong>{item.request_qty} {item.unit}</strong></span>
                     <span>Delivered: <strong>{item.receive_qty} {item.unit}</strong></span>
