@@ -33,6 +33,10 @@ export interface SPPItem {
   verified_by?: number | null;
   verified_at?: string | null;
   rejection_reason?: string | null;
+  return_qty: number;
+  returned_qty: number;
+  return_type: 'NONE' | 'REPLACEMENT' | 'SURPLUS';
+  return_status: 'NONE' | 'RETURNING' | 'RETURNED';
   created_at: string;
   material?: {
     id: number;

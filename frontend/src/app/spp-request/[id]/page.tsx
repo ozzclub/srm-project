@@ -98,6 +98,24 @@ export default function SPPDetailPage() {
     },
   });
 
+  // Initiate Return mutation
+  const initiateReturnMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
+      sppApi.initiateReturn(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
+    },
+  });
+
+  // Verify Return mutation
+  const verifyReturnMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: any }) =>
+      sppApi.verifyReturn(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spp-detail', sppId] });
+    },
+  });
+
   const handleSiteApprove = async (data: any) => {
     await siteApproveMutation.mutateAsync(data);
   };
@@ -121,6 +139,14 @@ export default function SPPDetailPage() {
   const handleUpdateItem = async (itemId: number, data: any) => {
     await updateItemMutation.mutateAsync({ itemId, data });
     setEditingItem(null);
+  };
+
+  const handleInitiateReturn = async (itemId: number, data: any) => {
+    await initiateReturnMutation.mutateAsync({ itemId, data });
+  };
+
+  const handleVerifyReturn = async (itemId: number, data: any) => {
+    await verifyReturnMutation.mutateAsync({ itemId, data });
   };
 
   if (isLoading) {
@@ -147,8 +173,15 @@ export default function SPPDetailPage() {
 
   const spp = sppData;
   const totalRequested = spp.items?.reduce((sum: any, item: any) => sum + item.request_qty, 0) || 0;
-  const totalReceived = spp.items?.reduce((sum: any, item: any) => sum + item.receive_qty, 0) || 0;
-  const fulfillmentPercentage = totalRequested > 0 ? (totalReceived / totalRequested) * 100 : 0;
+  // Use capped quantity for progress bar calculation
+  const totalEffectiveReceived = spp.items?.reduce(
+    (sum: any, item: any) => sum + Math.min(item.receive_qty, item.request_qty),
+    0
+  ) || 0;
+  // Use actual received for display in info cards
+  const totalActualReceived = spp.items?.reduce((sum: any, item: any) => sum + item.receive_qty, 0) || 0;
+  
+  const fulfillmentPercentage = totalRequested > 0 ? (totalEffectiveReceived / totalRequested) * 100 : 0;
 
   return (
     <DashboardLayout>
@@ -250,12 +283,12 @@ export default function SPPDetailPage() {
                 <p className="text-xs text-gray-600 mt-1">Total Requested</p>
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
-                <p className="text-2xl font-bold text-green-600">{totalReceived.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-green-600">{totalActualReceived.toFixed(2)}</p>
                 <p className="text-xs text-gray-600 mt-1">Total Received</p>
               </div>
               <div className="text-center p-3 bg-orange-50 rounded-lg">
                 <p className="text-2xl font-bold text-orange-600">
-                  {(totalRequested - totalReceived).toFixed(2)}
+                  {Math.max(0, totalRequested - totalActualReceived).toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-600 mt-1">Remaining</p>
               </div>
@@ -275,11 +308,13 @@ export default function SPPDetailPage() {
             onVerifyDelivery={handleVerifyDelivery}
             onDirectReceive={handleDirectReceive}
             onItemTypeChange={handleItemTypeChange}
+            onInitiateReturn={handleInitiateReturn}
           />
         ) : userRole === 'workshop' ? (
           <SPPWorkshopDeliverySection
             spp={spp}
             onUpdateDelivery={handleUpdateDelivery}
+            onVerifyReturn={handleVerifyReturn}
           />
         ) : (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -386,9 +421,14 @@ export default function SPPDetailPage() {
                           {item.receive_qty}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-orange-600">
-                          {item.remaining_qty}
+                          {item.remaining_qty < 0 ? `+${Math.abs(item.remaining_qty)} (Surplus)` : item.remaining_qty}
                         </td>
                         <td className="px-4 py-3">
+                          {item.receive_qty > item.request_qty && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mb-1 block w-fit">
+                              Surplus
+                            </span>
+                          )}
                           {item.delivery_status === 'REJECTED' ? (
                             <button
                               onClick={() => setSelectedRejectionItem(item)}

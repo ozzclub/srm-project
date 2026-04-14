@@ -30,7 +30,7 @@ export class MigrationService {
   // Get existing columns
   static async getColumns(tableName: string): Promise<ColumnInfo[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?',
+      `SHOW COLUMNS FROM ??`,
       [tableName]
     );
     return rows as unknown as ColumnInfo[];

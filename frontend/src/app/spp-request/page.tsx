@@ -22,14 +22,22 @@ import { SPPStatusBadge } from '@/components/spp';
 import { formatDateLocal } from '@/utils/date';
 import SPPImportModal from '@/components/spp/SPPImportModal';
 import { format } from 'date-fns';
+import { useAuthStore } from '@/store/authStore';
+import { useEffect } from 'react';
 
 function SPPRequestList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
+  const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
@@ -79,6 +87,8 @@ function SPPRequestList() {
   };
 
   const handleDelete = async (id: number) => {
+    if (user?.role === 'workshop') return;
+    
     if (confirm('Are you sure you want to delete this SPP request?')) {
       try {
         await deleteMutation.mutateAsync(id);
@@ -89,6 +99,8 @@ function SPPRequestList() {
   };
 
   const handleDownloadTemplate = async () => {
+    if (user?.role === 'workshop') return;
+    
     try {
       const response = await sppApi.downloadTemplate();
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -113,21 +125,24 @@ function SPPRequestList() {
             <p className="text-gray-600 mt-1">Manage SPP requests and track fulfillment</p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-            >
-              <FileSpreadsheet className="w-5 h-5" />
-              <span>Import Excel</span>
-            </button>
-            <button
-              onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-            >
-              <Download className="w-5 h-5" />
-              <span>Template</span>
-            </button>
-            <Link
+            {mounted && user?.role !== 'workshop' && (
+              <>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  <FileSpreadsheet className="w-5 h-5" />
+                  <span>Import Excel</span>
+                </button>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Template</span>
+                </button>
+              </>
+            )}            <Link
               href="/spp-request/new"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
             >
@@ -346,14 +361,16 @@ function SPPRequestList() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Link>
-                              <button
-                                onClick={() => handleDelete(spp.id)}
-                                className="text-red-600 hover:text-red-700"
-                                title="Delete"
-                                disabled={deleteMutation.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {mounted && user?.role !== 'workshop' && (
+                                <button
+                                  onClick={() => handleDelete(spp.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                  title="Delete"
+                                  disabled={deleteMutation.isPending}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

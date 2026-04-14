@@ -849,4 +849,112 @@ export class SPPController {
       });
     }
   }
+
+  // SITE initiates a return to Workshop
+  static async initiateReturn(req: Request, res: Response): Promise<void> {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const data = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(itemId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP item ID',
+        });
+        return;
+      }
+
+      if (!data.return_qty || !data.return_type) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required fields: return_qty, return_type',
+        });
+        return;
+      }
+
+      const item = await SPPService.initiateReturn(itemId, userId, data);
+
+      if (!item) {
+        res.status(404).json({
+          success: false,
+          message: 'SPP item not found',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: item,
+        message: 'Return initiated successfully',
+      });
+    } catch (error) {
+      console.error('Error initiating return:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to initiate return',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // Workshop verifies the return from SITE
+  static async verifyReturn(req: Request, res: Response): Promise<void> {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const data = req.body;
+
+      // Validate authentication
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      if (isNaN(itemId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid SPP item ID',
+        });
+        return;
+      }
+
+      const item = await SPPService.verifyReturnReceipt(itemId, userId, data);
+
+      if (!item) {
+        res.status(404).json({
+          success: false,
+          message: 'SPP item not found',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: item,
+        message: 'Return verified successfully',
+      });
+    } catch (error) {
+      console.error('Error verifying return:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to verify return',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }

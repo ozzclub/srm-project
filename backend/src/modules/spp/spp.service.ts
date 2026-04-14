@@ -180,7 +180,9 @@ export class SPPService {
         si.description, si.remarks, si.unit, si.request_qty, si.receive_qty,
         si.remaining_qty, si.request_status, DATE(si.date_req) as date_req,
         si.item_type, si.item_status, si.delivery_status, si.verified_by, si.verified_at, si.rejection_reason, si.created_at,
+        si.return_qty, si.returned_qty, si.return_type, si.return_status,
         m.id as material_id,
+
         m.material_code,
         m.description as material_description,
         m.remarks as material_remarks,
@@ -217,6 +219,10 @@ export class SPPService {
       verified_by: row.verified_by,
       verified_at: row.verified_at,
       rejection_reason: row.rejection_reason,
+      return_qty: parseFloat(row.return_qty) || 0,
+      returned_qty: parseFloat(row.returned_qty) || 0,
+      return_type: row.return_type || 'NONE',
+      return_status: row.return_status || 'NONE',
       created_at: row.created_at,
       material: row.material_id
         ? {
@@ -236,9 +242,14 @@ export class SPPService {
         : undefined,
     }));
 
+    const total_requested = items.reduce((sum, item) => sum + item.request_qty, 0);
+    const total_effective_received = items.reduce(
+      (sum, item) => sum + Math.min(item.receive_qty, item.request_qty),
+      0
+    );
+    const fulfillment_percentage = total_requested > 0 ? (total_effective_received / total_requested) * 100 : 0;
     const total_items = items.length;
     const completed_items = items.filter((item) => item.request_status === 'FULFILLED').length;
-    const fulfillment_percentage = total_items > 0 ? (completed_items / total_items) * 100 : 0;
 
     return {
       ...sppRequest,
@@ -579,18 +590,18 @@ export class SPPService {
       (sum: number, item: any) => sum + parseFloat(item.request_qty),
       0
     );
-    const total_received = itemRows.reduce(
-      (sum: number, item: any) => sum + parseFloat(item.receive_qty),
+    const total_effective_received = itemRows.reduce(
+      (sum: number, item: any) => sum + Math.min(parseFloat(item.receive_qty), parseFloat(item.request_qty)),
       0
     );
     const fulfillment_percentage =
-      total_requested > 0 ? (total_received / total_requested) * 100 : 0;
+      total_requested > 0 ? (total_effective_received / total_requested) * 100 : 0;
 
     return {
       spp_id: id,
       spp_number: sppRows[0].spp_number,
       total_requested,
-      total_received,
+      total_received: itemRows.reduce((sum: number, item: any) => sum + parseFloat(item.receive_qty), 0),
       fulfillment_percentage,
       items: itemRows.map((item: any) => ({
         item_id: item.id,
@@ -1165,6 +1176,135 @@ export class SPPService {
       );
       return updatedRows[0] as SPPItem;
 
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  // SITE initiates a return to Workshop
+  static async initiateReturn(
+    itemId: number,
+    userId: number,
+    data: {
+      return_qty: number;
+      return_type: 'REPLACEMENT' | 'SURPLUS';
+      notes?: string;
+    }
+  ): Promise<SPPItem | null> {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Get current item
+      const [itemRows] = await connection.query(
+        'SELECT spp_id, receive_qty, return_qty FROM spp_items WHERE id = ?',
+        [itemId]
+      ) as [RowDataPacket[], any];
+
+      if (itemRows.length === 0) return null;
+
+      const item = itemRows[0];
+      const availableToReturn = parseFloat(item.receive_qty) - parseFloat(item.return_qty);
+
+      if (data.return_qty > availableToReturn) {
+        throw new Error(`Cannot return more than received quantity. Available: ${availableToReturn}`);
+      }
+
+      // Update item with return info
+      await connection.query(
+        'UPDATE spp_items SET return_qty = return_qty + ?, return_type = ?, return_status = ? WHERE id = ?',
+        [data.return_qty, data.return_type, 'RETURNING', itemId]
+      );
+
+      // Decrease Site Inventory
+      await connection.query(
+        'UPDATE inventory SET quantity = quantity - ? WHERE spp_item_id = ? AND quantity >= ?',
+        [data.return_qty, itemId, data.return_qty]
+      );
+
+      await connection.commit();
+
+      const [updated] = await pool.query<RowDataPacket[]>(
+        'SELECT * FROM spp_items WHERE id = ?',
+        [itemId]
+      );
+      return updated[0] as SPPItem;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  // Workshop verifies the return from SITE
+  static async verifyReturnReceipt(
+    itemId: number,
+    userId: number,
+    data: {
+      actual_qty?: number;
+      notes?: string;
+    }
+  ): Promise<SPPItem | null> {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Get current item
+      const [itemRows] = await connection.query(
+        'SELECT spp_id, receive_qty, return_qty, return_type FROM spp_items WHERE id = ?',
+        [itemId]
+      ) as [RowDataPacket[], any];
+
+      if (itemRows.length === 0) return null;
+
+      const item = itemRows[0];
+      const qtyToConfirm = data.actual_qty !== undefined ? data.actual_qty : parseFloat(item.return_qty);
+
+      // Update item: move return_qty to returned_qty
+      await connection.query(
+        'UPDATE spp_items SET returned_qty = returned_qty + ?, return_qty = 0, return_status = ? WHERE id = ?',
+        [qtyToConfirm, 'RETURNED', itemId]
+      );
+
+      // If REPLACEMENT, decrease receive_qty so remaining_qty increases
+      if (item.return_type === 'REPLACEMENT') {
+        await connection.query(
+          'UPDATE spp_items SET receive_qty = receive_qty - ? WHERE id = ?',
+          [qtyToConfirm, itemId]
+        );
+        
+        // Update request_status back to PARTIAL or PENDING
+        const [updatedItem] = await connection.query(
+          'SELECT request_qty, receive_qty FROM spp_items WHERE id = ?',
+          [itemId]
+        ) as [RowDataPacket[], any];
+        
+        const req = updatedItem[0];
+        let newReqStatus = 'PENDING';
+        if (parseFloat(req.receive_qty) > 0) {
+          newReqStatus = 'PARTIAL';
+        }
+        
+        await connection.query(
+          'UPDATE spp_items SET request_status = ? WHERE id = ?',
+          [newReqStatus, itemId]
+        );
+
+        // Also update overall SPP status
+        await this.updateSPPStatusBasedOnFulfillment(connection, item.spp_id);
+      }
+
+      await connection.commit();
+
+      const [updated] = await pool.query<RowDataPacket[]>(
+        'SELECT * FROM spp_items WHERE id = ?',
+        [itemId]
+      );
+      return updated[0] as SPPItem;
     } catch (error) {
       await connection.rollback();
       throw error;

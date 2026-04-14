@@ -22,6 +22,7 @@ interface SPPSiteApprovalSectionProps {
     notes?: string;
   }) => Promise<void>;
   onItemTypeChange?: (itemId: number, itemType: 'TOOL' | 'MATERIAL') => Promise<void>;
+  onInitiateReturn?: (itemId: number, data: { return_qty: number; return_type: 'REPLACEMENT' | 'SURPLUS'; notes?: string }) => Promise<void>;
 }
 
 export default function SPPSiteApprovalSection({
@@ -30,6 +31,7 @@ export default function SPPSiteApprovalSection({
   onVerifyDelivery,
   onDirectReceive,
   onItemTypeChange,
+  onInitiateReturn,
 }: SPPSiteApprovalSectionProps) {
   // Verification states
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
@@ -45,6 +47,12 @@ export default function SPPSiteApprovalSection({
   
   // Item type change state
   const [changingItemType, setChangingItemType] = useState<number | null>(null);
+
+  // Return states
+  const [returningItemId, setReturningItemId] = useState<number | null>(null);
+  const [returnQty, setReturnQty] = useState<number>(0);
+  const [returnType, setReturnType] = useState<'REPLACEMENT' | 'SURPLUS'>('REPLACEMENT');
+  const [isInitiatingReturn, setIsInitiatingReturn] = useState(false);
 
   // Filter items by status
   const pendingVerificationItems = spp.items.filter(item => item.delivery_status === 'SENT');
@@ -134,6 +142,31 @@ export default function SPPSiteApprovalSection({
       alert('Gagal mengubah tipe item');
     } finally {
       setChangingItemType(null);
+    }
+  };
+
+  // Handle initiate return
+  const handleInitiateReturn = async () => {
+    if (!onInitiateReturn || !returningItemId) return;
+
+    if (returnQty <= 0) {
+      alert('Jumlah pengembalian harus lebih dari 0');
+      return;
+    }
+
+    setIsInitiatingReturn(true);
+    try {
+      await onInitiateReturn(returningItemId, {
+        return_qty: returnQty,
+        return_type: returnType,
+      });
+      setReturningItemId(null);
+      setReturnQty(0);
+    } catch (error: any) {
+      console.error('Failed to initiate return:', error);
+      alert(error.response?.data?.message || 'Gagal melakukan pengembalian barang');
+    } finally {
+      setIsInitiatingReturn(false);
     }
   };
 
@@ -267,6 +300,37 @@ export default function SPPSiteApprovalSection({
                           <p className="text-xs text-gray-500 ml-2">
                             Klik untuk mengubah jika Workshop salah input tipe
                           </p>
+                        </div>
+                      </div>
+
+                      {/* Return to Workshop Action */}
+                      <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+                        <p className="text-sm font-medium text-orange-900 mb-2">Return to Workshop</p>
+                        <p className="text-xs text-orange-700 mb-3">
+                          Gunakan fitur ini untuk mengembalikan barang ke Workshop (untuk diganti atau karena selesai pakai).
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setReturningItemId(item.id);
+                              setReturnQty(item.receive_qty);
+                            }}
+                            disabled={item.receive_qty <= 0 || item.return_status === 'RETURNING'}
+                            className="inline-flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors disabled:opacity-50"
+                          >
+                            <Package className="h-4 w-4" />
+                            Return to Workshop
+                          </button>
+                          {item.return_status === 'RETURNING' && (
+                            <span className="text-xs font-medium text-orange-600 animate-pulse">
+                              ⏳ Sedang dalam proses pengembalian ({item.return_qty} {item.unit})
+                            </span>
+                          )}
+                          {item.returned_qty > 0 && (
+                            <span className="text-xs font-medium text-green-600">
+                              ✅ Total Kembali: {item.returned_qty} {item.unit}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -456,6 +520,114 @@ export default function SPPSiteApprovalSection({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Return Modal */}
+      {returningItemId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4 text-orange-600">
+                <div className="p-2 bg-orange-50 rounded-full">
+                  <Package className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold">Return to Workshop</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-1">Item Details</p>
+                  <p className="font-bold text-gray-900">
+                    {spp.items.find(i => i.id === returningItemId)?.list_item || 
+                     spp.items.find(i => i.id === returningItemId)?.description}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Jumlah yang Dikembalikan
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={returnQty}
+                      onChange={(e) => setReturnQty(parseFloat(e.target.value) || 0)}
+                      max={spp.items.find(i => i.id === returningItemId)?.receive_qty}
+                      min="0"
+                      step="0.01"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {spp.items.find(i => i.id === returningItemId)?.unit}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Maksimal: {spp.items.find(i => i.id === returningItemId)?.receive_qty} {spp.items.find(i => i.id === returningItemId)?.unit}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipe Pengembalian
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setReturnType('REPLACEMENT')}
+                      className={`p-3 text-left rounded-xl border transition ${
+                        returnType === 'REPLACEMENT'
+                          ? 'bg-orange-50 border-orange-500 ring-1 ring-orange-500'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">Minta Ganti</p>
+                      <p className="text-[10px] text-gray-500 leading-tight">Barang rusak/salah dan butuh dikirim ulang.</p>
+                    </button>
+                    <button
+                      onClick={() => setReturnType('SURPLUS')}
+                      className={`p-3 text-left rounded-xl border transition ${
+                        returnType === 'SURPLUS'
+                          ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">Selesai Pakai</p>
+                      <p className="text-[10px] text-gray-500 leading-tight">Kelebihan material atau alat selesai digunakan.</p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
+                  <p className="text-xs text-blue-700 leading-tight">
+                    {returnType === 'REPLACEMENT' 
+                      ? 'Status pemenuhan akan berkurang. Workshop akan melihat sisa barang yang perlu dikirim ulang.'
+                      : 'Status pemenuhan tetap 100%. Barang hanya dikembalikan ke stok pusat.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setReturningItemId(null)}
+                className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-100 active:scale-95 transition-all text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleInitiateReturn}
+                disabled={isInitiatingReturn}
+                className="flex-1 px-4 py-3 bg-orange-600 text-white font-bold rounded-xl hover:bg-orange-700 active:scale-95 transition-all text-sm shadow-lg shadow-orange-200 flex items-center justify-center"
+              >
+                {isInitiatingReturn ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Konfirmasi Return'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

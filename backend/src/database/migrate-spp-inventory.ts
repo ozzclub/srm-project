@@ -75,31 +75,103 @@ export async function migrateSPPAndInventory() {
           list_item_number INT NOT NULL,
           list_item VARCHAR(255) NOT NULL,
           description TEXT NOT NULL,
+          remarks TEXT,
           unit VARCHAR(20) NOT NULL,
           request_qty DECIMAL(10, 2) NOT NULL,
           receive_qty DECIMAL(10, 2) DEFAULT 0.00,
           remaining_qty DECIMAL(10, 2) GENERATED ALWAYS AS (request_qty - receive_qty) STORED,
           request_status ENUM('PENDING', 'PARTIAL', 'FULFILLED') DEFAULT 'PENDING',
           date_req DATE NOT NULL,
-          item_status ENUM('PENDING', 'APPROVED', 'IN_TRANSIT', 'RECEIVED') DEFAULT 'PENDING',
-          delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT') DEFAULT 'NOT_SENT',
+          item_type ENUM('TOOL', 'MATERIAL') DEFAULT 'MATERIAL',
+          item_status ENUM('PENDING', 'APPROVED', 'IN_TRANSIT', 'PENDING_VERIFICATION', 'RECEIVED') DEFAULT 'PENDING',
+          delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT', 'VERIFIED', 'REJECTED') DEFAULT 'NOT_SENT',
+          verified_by INT,
+          verified_at TIMESTAMP NULL,
+          rejection_reason TEXT,
+          return_qty DECIMAL(10, 2) DEFAULT 0.00,
+          returned_qty DECIMAL(10, 2) DEFAULT 0.00,
+          return_type ENUM('NONE', 'REPLACEMENT', 'SURPLUS') DEFAULT 'NONE',
+          return_status ENUM('NONE', 'RETURNING', 'RETURNED') DEFAULT 'NONE',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (spp_id) REFERENCES spp_requests(id) ON DELETE CASCADE,
-          FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE SET NULL
+          FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE SET NULL,
+          FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL
         )
       `);
       tablesCreated++;
     } else {
       console.log('  ✅ spp_items table exists');
-      // Add delivery_status column if it doesn't exist
+      
+      // Get current columns to check what's missing
       const columns = await MigrationService.getColumns('spp_items');
-      if (!columns.find(col => col.Field === 'delivery_status')) {
+      
+      // 1. Add remarks column if missing
+      if (!columns.find(col => col.Field === 'remarks')) {
         await pool.query(`
           ALTER TABLE spp_items
-          ADD COLUMN delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT') DEFAULT 'NOT_SENT' AFTER item_status
+          ADD COLUMN remarks TEXT AFTER description
+        `);
+        console.log('  ✅ Added remarks column to spp_items');
+      }
+
+      // 2. Add item_type column if missing
+      if (!columns.find(col => col.Field === 'item_type')) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          ADD COLUMN item_type ENUM('TOOL', 'MATERIAL') DEFAULT 'MATERIAL' AFTER date_req
+        `);
+        console.log('  ✅ Added item_type column to spp_items');
+      }
+
+      // 3. Update item_status ENUM if needed
+      const itemStatusCol = columns.find(col => col.Field === 'item_status');
+      if (itemStatusCol && !itemStatusCol.Type.includes('PENDING_VERIFICATION')) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          MODIFY COLUMN item_status ENUM('PENDING', 'APPROVED', 'IN_TRANSIT', 'PENDING_VERIFICATION', 'RECEIVED') DEFAULT 'PENDING'
+        `);
+        console.log('  ✅ Updated item_status ENUM in spp_items');
+      }
+
+      // 4. Update delivery_status ENUM if needed (also adds the column if missing)
+      const deliveryStatusCol = columns.find(col => col.Field === 'delivery_status');
+      if (!deliveryStatusCol) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          ADD COLUMN delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT', 'VERIFIED', 'REJECTED') DEFAULT 'NOT_SENT' AFTER item_status
         `);
         console.log('  ✅ Added delivery_status column to spp_items');
+      } else if (!deliveryStatusCol.Type.includes('VERIFIED')) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          MODIFY COLUMN delivery_status ENUM('NOT_SENT', 'PARTIAL', 'SENT', 'VERIFIED', 'REJECTED') DEFAULT 'NOT_SENT'
+        `);
+        console.log('  ✅ Updated delivery_status ENUM in spp_items');
+      }
+
+      // 5. Add verification columns if missing
+      if (!columns.find(col => col.Field === 'verified_by')) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          ADD COLUMN verified_by INT AFTER delivery_status,
+          ADD COLUMN verified_at TIMESTAMP NULL AFTER verified_by,
+          ADD COLUMN rejection_reason TEXT AFTER verified_at,
+          ADD FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL
+        `);
+        console.log('  ✅ Added verification columns to spp_items');
+      }
+
+      // 6. Add return columns if they don't exist
+      if (!columns.find(col => col.Field === 'return_qty')) {
+        await pool.query(`
+          ALTER TABLE spp_items
+          ADD COLUMN return_qty DECIMAL(10, 2) DEFAULT 0.00 AFTER rejection_reason,
+          ADD COLUMN returned_qty DECIMAL(10, 2) DEFAULT 0.00 AFTER return_qty,
+          ADD COLUMN return_type ENUM('NONE', 'REPLACEMENT', 'SURPLUS') DEFAULT 'NONE' AFTER returned_qty,
+          ADD COLUMN return_status ENUM('NONE', 'RETURNING', 'RETURNED') DEFAULT 'NONE' AFTER return_type
+        `);
+        console.log('  ✅ Added return columns to spp_items');
       }
     }
   } catch (error: any) {

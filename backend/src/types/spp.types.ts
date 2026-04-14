@@ -30,6 +30,10 @@ export interface SPPItem {
   item_type: 'TOOL' | 'MATERIAL';
   item_status: 'PENDING' | 'IN_TRANSIT' | 'PENDING_VERIFICATION' | 'RECEIVED';
   delivery_status: 'NOT_SENT' | 'SENT' | 'VERIFIED' | 'REJECTED';
+  return_qty: number;
+  returned_qty: number;
+  return_type: 'NONE' | 'REPLACEMENT' | 'SURPLUS';
+  return_status: 'NONE' | 'RETURNING' | 'RETURNED';
   verified_by?: number | null;
   verified_at?: string | null;
   rejection_reason?: string | null;
@@ -211,6 +215,19 @@ export interface VerifyDeliveryDTO {
 // Direct Receive DTO (for SITE to directly receive without Workshop)
 export interface DirectReceiveDTO {
   receive_qty: number;
+  notes?: string;
+}
+
+// Initiate Return DTO (for SITE to return to Workshop)
+export interface InitiateReturnDTO {
+  return_qty: number;
+  return_type: 'REPLACEMENT' | 'SURPLUS';
+  notes?: string;
+}
+
+// Verify Return DTO (for Workshop to verify return from SITE)
+export interface VerifyReturnDTO {
+  actual_qty?: number;
   notes?: string;
 }
 

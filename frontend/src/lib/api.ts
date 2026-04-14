@@ -228,6 +228,13 @@ export const sppApi = {
   directReceive: (itemId: number, data: any) => api.post(`/spp/items/${itemId}/direct-receive`, data),
   updateItemType: (itemId: number, data: { item_type: 'TOOL' | 'MATERIAL' }) => 
     api.patch(`/spp/items/${itemId}/item-type`, data),
+  
+  // Return to Workshop
+  initiateReturn: (itemId: number, data: { return_qty: number; return_type: 'REPLACEMENT' | 'SURPLUS'; notes?: string }) =>
+    api.post(`/spp/items/${itemId}/initiate-return`, data),
+  verifyReturn: (itemId: number, data: { actual_qty?: number; notes?: string }) =>
+    api.post(`/spp/items/${itemId}/verify-return`, data),
+
   addItem: (sppId: number, itemData: any) => api.post(`/spp/${sppId}/items`, itemData),
   updateItem: (itemId: number, data: any) => api.put(`/spp/items/${itemId}`, data),
   deleteItem: (itemId: number) => api.delete(`/spp/items/${itemId}`),
