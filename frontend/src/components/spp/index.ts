@@ -6,3 +6,4 @@ export { default as SPPImportModal } from './SPPImportModal';
 export { default as SPPSiteApprovalSection } from './SPPSiteApprovalSection';
 export { default as SPPWorkshopDeliverySection } from './SPPWorkshopDeliverySection';
 export { default as SPPItemEditModal } from './SPPItemEditModal';
+export { default as RejectionReasonPopup } from './RejectionReasonPopup';

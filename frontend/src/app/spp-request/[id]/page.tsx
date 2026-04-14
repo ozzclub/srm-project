@@ -10,7 +10,8 @@ import {
   SPPApprovalTimeline,
   SPPSiteApprovalSection,
   SPPWorkshopDeliverySection,
-  SPPItemEditModal
+  SPPItemEditModal,
+  RejectionReasonPopup
 } from '@/components/spp';
 import { ArrowLeft, Package, Calendar, User, MapPin, Building2, Edit } from 'lucide-react';
 import Link from 'next/link';
@@ -27,6 +28,7 @@ export default function SPPDetailPage() {
   const [activeTab, setActiveTab] = useState<'items' | 'approvals'>('items');
   const [userRole, setUserRole] = useState<string>('');
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [selectedRejectionItem, setSelectedRejectionItem] = useState<any>(null);
   
   // Get user role from auth
   useEffect(() => {
@@ -387,22 +389,33 @@ export default function SPPDetailPage() {
                           {item.remaining_qty}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            item.delivery_status === 'SENT' || item.delivery_status === 'PENDING_VERIFICATION'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : item.delivery_status === 'VERIFIED'
-                              ? 'bg-green-100 text-green-700'
-                              : item.delivery_status === 'REJECTED'
-                              ? 'bg-red-100 text-red-700'
-                              : item.delivery_status === 'PARTIAL'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {item.delivery_status === 'SENT' ? 'Sent - Pending Verification' : 
-                             item.delivery_status === 'VERIFIED' ? 'Verified' :
-                             item.delivery_status === 'REJECTED' ? 'Rejected' :
-                             item.delivery_status || 'Not Sent'}
-                          </span>
+                          {item.delivery_status === 'REJECTED' ? (
+                            <button
+                              onClick={() => setSelectedRejectionItem(item)}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium hover:bg-red-200 transition-colors cursor-pointer ${
+                                item.delivery_status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-700'
+                                  : ''
+                              }`}
+                            >
+                              Rejected
+                            </button>
+                          ) : (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              item.delivery_status === 'SENT' || item.delivery_status === 'PENDING_VERIFICATION'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : item.delivery_status === 'VERIFIED'
+                                ? 'bg-green-100 text-green-700'
+                                : item.delivery_status === 'PARTIAL'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {item.delivery_status === 'SENT' ? 'Sent - Pending Verification' :
+                               item.delivery_status === 'VERIFIED' ? 'Verified' :
+                               item.delivery_status === 'PARTIAL' ? 'Partial' :
+                               item.delivery_status || 'Not Sent'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -430,31 +443,6 @@ export default function SPPDetailPage() {
                         )}
                       </tr>
                       
-                      {/* Rejection Reason Sub-Row */}
-                      {item.delivery_status === 'REJECTED' && item.rejection_reason && (
-                        <tr className="bg-red-50">
-                          <td colSpan={9} className="px-4 py-3">
-                            <div className="flex items-start gap-2">
-                              <span className="text-red-600 font-semibold text-sm">❌ Ditolak:</span>
-                              <div className="flex-1">
-                                <p className="text-sm text-red-700">
-                                  {item.rejection_reason}
-                                </p>
-                                {item.verified_at && (
-                                  <p className="text-xs text-red-600 mt-1">
-                                    {item.verified_by ? 'Oleh: SITE User • ' : ''}
-                                    {new Date(item.verified_at).toLocaleDateString('id-ID', {
-                                      day: 'numeric',
-                                      month: 'long',
-                                      year: 'numeric'
-                                    })}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                       </React.Fragment>
                     ))}
                   </tbody>
@@ -478,6 +466,15 @@ export default function SPPDetailPage() {
             onSave={handleUpdateItem}
           />
         )}
+
+        {/* Rejection Reason Popup */}
+        <RejectionReasonPopup
+          isOpen={!!selectedRejectionItem}
+          onClose={() => setSelectedRejectionItem(null)}
+          rejectionReason={selectedRejectionItem?.rejection_reason || ''}
+          verifiedAt={selectedRejectionItem?.verified_at}
+          verifiedBy={selectedRejectionItem?.verified_by ? 'SITE User' : undefined}
+        />
       </div>
     </DashboardLayout>
   );
