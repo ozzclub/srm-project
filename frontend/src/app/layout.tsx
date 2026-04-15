@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Material Log System",
-  description: "Material Control and Management System",
+  title: "SRM HEADQUARTERS - Construction Project Dashboard",
+  description: "SRM Headquarters - Construction Project Material Control & Management System",
 };
 
 export default function RootLayout({

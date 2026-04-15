@@ -3,6 +3,5 @@
     "allow": [
       "Bash(chmod *)"
     ]
-  },
-  "$version": 3
+  }
 }
