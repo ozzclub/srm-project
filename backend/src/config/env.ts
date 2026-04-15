@@ -4,8 +4,11 @@ dotenv.config();
 
 export const config = {
   // Server
-  port: parseInt(process.env.PORT || '3000'),
+  port: parseInt(process.env.PORT || '6000'),
   nodeEnv: process.env.NODE_ENV || 'development',
+
+  // CORS
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:6001,https://jastipravita.co,http://jastipravita.co,https://backend.jastipravita.co,http://backend.jastipravita.co',
 
   // Database
   db: {

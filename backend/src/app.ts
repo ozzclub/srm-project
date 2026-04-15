@@ -18,7 +18,12 @@ import inventoryRoutes from './modules/inventory/inventory.routes';
 const app: Application = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: config.corsOrigin.split(',').map(origin => origin.trim()),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

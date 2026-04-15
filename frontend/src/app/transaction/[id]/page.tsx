@@ -32,8 +32,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-const UPLOADS_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend.jastipravita.co/api';
+const UPLOADS_URL = process.env.NEXT_PUBLIC_UPLOADS_URL || 'https://backend.jastipravita.co';
 
 function formatDate(dateString: string | null): string {
   if (!dateString) return '-';

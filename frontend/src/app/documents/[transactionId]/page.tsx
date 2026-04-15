@@ -17,7 +17,8 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend.jastipravita.co/api';
+const UPLOADS_URL = process.env.NEXT_PUBLIC_UPLOADS_URL || 'https://backend.jastipravita.co';
 
 export default function DocumentsPage() {
   const params = useParams();
@@ -122,7 +123,7 @@ export default function DocumentsPage() {
   };
 
   const getFileUrl = (fileUrl: string) => {
-    return `${API_URL}/uploads/${transactionId}/${fileUrl}`;
+    return `${UPLOADS_URL}/uploads/${transactionId}/${fileUrl}`;
   };
 
   const formatFileSize = (bytes: number) => {
