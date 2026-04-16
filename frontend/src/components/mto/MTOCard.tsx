@@ -113,7 +113,7 @@ export default function MTOCard({
               <div>
                 <div className="text-gray-500">Fulfillment</div>
                 <div className="text-xl font-bold text-blue-600">
-                  {fulfillmentPercentage.toFixed(1)}%
+                  {(Number(fulfillmentPercentage) || 0).toFixed(1)}%
                 </div>
               </div>
             )}

@@ -172,14 +172,14 @@ export default function SPPDetailPage() {
   }
 
   const spp = sppData;
-  const totalRequested = spp.items?.reduce((sum: any, item: any) => sum + item.request_qty, 0) || 0;
+  const totalRequested = spp.items?.reduce((sum: any, item: any) => sum + (Number(item.request_qty) || 0), 0) || 0;
   // Use capped quantity for progress bar calculation
   const totalEffectiveReceived = spp.items?.reduce(
-    (sum: any, item: any) => sum + Math.min(item.receive_qty, item.request_qty),
+    (sum: any, item: any) => sum + Math.min(Number(item.receive_qty) || 0, Number(item.request_qty) || 0),
     0
   ) || 0;
   // Use actual received for display in info cards
-  const totalActualReceived = spp.items?.reduce((sum: any, item: any) => sum + item.receive_qty, 0) || 0;
+  const totalActualReceived = spp.items?.reduce((sum: any, item: any) => sum + (Number(item.receive_qty) || 0), 0) || 0;
   
   const fulfillmentPercentage = totalRequested > 0 ? (totalEffectiveReceived / totalRequested) * 100 : 0;
 
@@ -262,9 +262,8 @@ export default function SPPDetailPage() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Overall Progress</span>
               <span className="font-semibold text-gray-900">
-                {fulfillmentPercentage.toFixed(1)}%
-              </span>
-            </div>
+               {(Number(fulfillmentPercentage) || 0).toFixed(1)}%
+              </span>            </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
                 className={`h-3 rounded-full transition-all ${

@@ -83,7 +83,15 @@ export class MTOService {
       [...values, limit, offset]
     );
 
-    return { data: rows as unknown as MTORequestWithItems[], total };
+    const data: MTORequestWithItems[] = rows.map((row: any) => ({
+      ...row,
+      total_items: parseInt(row.total_items) || 0,
+      completed_items: parseInt(row.completed_items) || 0,
+      fulfillment_percentage: parseFloat(row.fulfillment_percentage) || 0,
+      items: [],
+    }));
+
+    return { data, total };
   }
 
   // Get MTO request by ID with items
@@ -562,6 +570,12 @@ export class MTOService {
       [`%${projectName}%`]
     );
 
-    return rows as unknown as MTORequestWithItems[];
+    return rows.map((row: any) => ({
+      ...row,
+      total_items: parseInt(row.total_items) || 0,
+      completed_items: parseInt(row.completed_items) || 0,
+      fulfillment_percentage: parseFloat(row.fulfillment_percentage) || 0,
+      items: [],
+    })) as MTORequestWithItems[];
   }
 }

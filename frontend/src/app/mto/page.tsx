@@ -301,7 +301,7 @@ function MTOList() {
                                 />
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {mto.fulfillment_percentage?.toFixed(1) || 0}%
+                                {(Number(mto.fulfillment_percentage) || 0).toFixed(1)}%
                               </div>
                             </div>
                           </td>

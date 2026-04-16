@@ -232,7 +232,7 @@ export default function WorkshopDashboardPage() {
                               />
                             </div>
                             <span className="text-xs font-medium text-gray-700">
-                              {spp.fulfillment_percentage?.toFixed(0) || 0}%
+                              {(Number(spp.fulfillment_percentage) || 0).toFixed(0)}%
                             </span>
                           </div>
                         </div>
