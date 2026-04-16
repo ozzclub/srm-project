@@ -191,25 +191,38 @@ export default function MovementLogForm({
             <Controller
               name="material_id"
               control={control}
-              render={({ field }) => (
-                <Combobox
-                  items={materials || []}
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
-                  <ComboboxInput placeholder="Select material..." showClear />
-                  <ComboboxContent>
-                    <ComboboxEmpty>No material found.</ComboboxEmpty>
-                    <ComboboxList>
-                      {(m: any) => (
-                        <ComboboxItem key={m.id} value={m.id}>
-                          {m.material_code} - {m.description}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              )}
+              render={({ field }) => {
+                // Convert between ID (for form) and full object (for combobox)
+                const selectedMaterial = materials?.find((m: any) => m.id === field.value) || null;
+                
+                const handleComboboxChange = (material: any) => {
+                  field.onChange(material?.id || 0);
+                };
+
+                return (
+                  <Combobox
+                    items={materials || []}
+                    value={selectedMaterial}
+                    onValueChange={handleComboboxChange}
+                    itemToString={(m: any) => m.material_code}
+                    itemToSearchString={(m: any) => 
+                      `${m.material_code} ${m.description} ${m.remarks || ''} ${m.material_types?.map((t: any) => t.type_name).join(' ') || ''}`
+                    }
+                  >
+                    <ComboboxInput placeholder="Select material..." showClear />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No material found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(m: any) => (
+                          <ComboboxItem key={m.id} value={m}>
+                            {m.material_code} - {m.description}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                );
+              }}
             />
             {errors.material_id && <p className={errorClass}>{errors.material_id.message}</p>}
             {selectedMaterialData && (
@@ -236,25 +249,34 @@ export default function MovementLogForm({
             <Controller
               name="from_location_id"
               control={control}
-              render={({ field }) => (
-                <Combobox
-                  items={locations || []}
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
-                  <ComboboxInput placeholder="Select from location..." showClear />
-                  <ComboboxContent>
-                    <ComboboxEmpty>No location found.</ComboboxEmpty>
-                    <ComboboxList>
-                      {(l: any) => (
-                        <ComboboxItem key={l.id} value={l.id}>
-                          {l.location_name}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              )}
+              render={({ field }) => {
+                const selectedLocation = locations?.find((l: any) => l.id === field.value) || null;
+                
+                const handleComboboxChange = (location: any) => {
+                  field.onChange(location?.id || 0);
+                };
+
+                return (
+                  <Combobox
+                    items={locations || []}
+                    value={selectedLocation}
+                    onValueChange={handleComboboxChange}
+                    itemToString={(l: any) => l.location_name}
+                  >
+                    <ComboboxInput placeholder="Select from location..." showClear />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No location found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(l: any) => (
+                          <ComboboxItem key={l.id} value={l}>
+                            {l.location_name}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                );
+              }}
             />
             {errors.from_location_id && <p className={errorClass}>{errors.from_location_id.message}</p>}
           </div>
@@ -263,25 +285,34 @@ export default function MovementLogForm({
             <Controller
               name="to_location_id"
               control={control}
-              render={({ field }) => (
-                <Combobox
-                  items={locations || []}
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
-                  <ComboboxInput placeholder="Select to location..." showClear />
-                  <ComboboxContent>
-                    <ComboboxEmpty>No location found.</ComboboxEmpty>
-                    <ComboboxList>
-                      {(l: any) => (
-                        <ComboboxItem key={l.id} value={l.id}>
-                          {l.location_name}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              )}
+              render={({ field }) => {
+                const selectedLocation = locations?.find((l: any) => l.id === field.value) || null;
+                
+                const handleComboboxChange = (location: any) => {
+                  field.onChange(location?.id || 0);
+                };
+
+                return (
+                  <Combobox
+                    items={locations || []}
+                    value={selectedLocation}
+                    onValueChange={handleComboboxChange}
+                    itemToString={(l: any) => l.location_name}
+                  >
+                    <ComboboxInput placeholder="Select to location..." showClear />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No location found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(l: any) => (
+                          <ComboboxItem key={l.id} value={l}>
+                            {l.location_name}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                );
+              }}
             />
             {errors.to_location_id && <p className={errorClass}>{errors.to_location_id.message}</p>}
           </div>

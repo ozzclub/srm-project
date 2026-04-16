@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { UseFieldArrayReturn, UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
 import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from '@/components/ui/combobox';
+import { Material } from '@/types';
 
 interface MTOItem {
   material_id: number;
@@ -11,13 +12,7 @@ interface MTOItem {
 interface MTOItemsFormProps {
   register: UseFormRegister<any>;
   fieldArray: UseFieldArrayReturn<any>;
-  materials: Array<{
-    id: number;
-    material_code: string;
-    description: string;
-    remarks: string;
-    unit: string;
-  }>;
+  materials: Material[];
   errors: FieldErrors<any>;
   control: any;
 }
@@ -83,25 +78,37 @@ export default function MTOItemsForm({
                 <Controller
                   name={`items.${index}.material_id`}
                   control={control}
-                  render={({ field }) => (
-                    <Combobox
-                      items={materials}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <ComboboxInput placeholder="Select material..." showClear />
-                      <ComboboxContent>
-                        <ComboboxEmpty>No material found.</ComboboxEmpty>
-                        <ComboboxList>
-                          {(m: any) => (
-                            <ComboboxItem key={m.id} value={m.id}>
-                              {m.material_code} - {m.description}
-                            </ComboboxItem>
-                          )}
-                        </ComboboxList>
-                      </ComboboxContent>
-                    </Combobox>
-                  )}
+                  render={({ field }) => {
+                    const selectedMaterial = materials?.find((m: any) => m.id === field.value) || null;
+                    
+                    const handleComboboxChange = (material: any) => {
+                      field.onChange(material?.id || '');
+                    };
+
+                    return (
+                      <Combobox
+                        items={materials}
+                        value={selectedMaterial}
+                        onValueChange={handleComboboxChange}
+                        itemToString={(m: any) => m.material_code}
+                        itemToSearchString={(m: any) => 
+                          `${m.material_code} ${m.description} ${m.remarks || ''} ${m.material_types?.map((t: any) => t.type_name).join(' ') || ''}`
+                        }
+                      >
+                        <ComboboxInput placeholder="Select material..." showClear />
+                        <ComboboxContent>
+                          <ComboboxEmpty>No material found.</ComboboxEmpty>
+                          <ComboboxList>
+                            {(m: any) => (
+                              <ComboboxItem key={m.id} value={m}>
+                                {m.material_code} - {m.description}
+                              </ComboboxItem>
+                            )}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
+                    );
+                  }}
                 />
                 {((errors.items as any)?.[index]?.material_id) && (
                   <p className="text-red-600 text-xs mt-1">

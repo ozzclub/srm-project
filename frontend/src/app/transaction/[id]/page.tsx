@@ -83,6 +83,7 @@ function TransactionDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [docToDelete, setDocToDelete] = useState<any>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -136,6 +137,17 @@ function TransactionDetail() {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+    }
+  };
+
+  const copyMaterialCode = async () => {
+    if (!logData?.material?.material_code) return;
+    try {
+      await navigator.clipboard.writeText(logData.material.material_code);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
     }
   };
 
@@ -337,15 +349,31 @@ function TransactionDetail() {
 
         {/* Main Info Card */}
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <p className="text-sm text-gray-500 font-mono">{transactionId}</p>
-            <button onClick={copyId} className="p-1 hover:bg-gray-100 rounded transition">
-              {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
-            </button>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Transaction ID</span>
+              <p className="text-sm text-gray-500 font-mono">{transactionId}</p>
+              <button onClick={copyId} className="p-1 hover:bg-gray-100 rounded transition" title="Copy Transaction ID">
+                {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+              </button>
+            </div>
+            
+            {logData.material?.material_code && (
+              <>
+                <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Material Code</span>
+                  <p className="text-sm text-gray-500 font-mono">{logData.material.material_code}</p>
+                  <button onClick={copyMaterialCode} className="p-1 hover:bg-gray-100 rounded transition" title="Copy Material Code">
+                    {codeCopied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {logData.material?.material_name || 'Unknown Material'}
+            {logData.material?.description || 'Unknown Material'}
           </h1>
 
           {logData.material?.specification && (

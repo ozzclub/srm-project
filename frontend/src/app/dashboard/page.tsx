@@ -143,7 +143,7 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    dashboardData?.recentLogs?.map((log: { id: string | number; transaction_id: string; material_name?: string; qty?: string | number; created_at: string }) => (
+                    dashboardData?.recentLogs?.map((log: { id: string | number; transaction_id: string; description?: string; qty?: string | number; created_at: string }) => (
                       <tr
                         key={log.id}
                         className="hover:bg-gray-50 cursor-pointer transition-colors"
@@ -153,7 +153,7 @@ export default function DashboardPage() {
                           {log.transaction_id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {log.material_name || '-'}
+                          {log.description || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {log.qty || '-'}
