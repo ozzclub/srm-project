@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
-import { UseFieldArrayReturn, UseFormRegister, FieldErrors } from 'react-hook-form';
+import { UseFieldArrayReturn, UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
+import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from '@/components/ui/combobox';
 
 interface MTOItem {
   material_id: number;
@@ -18,6 +19,7 @@ interface MTOItemsFormProps {
     unit: string;
   }>;
   errors: FieldErrors<any>;
+  control: any;
 }
 
 export default function MTOItemsForm({
@@ -25,6 +27,7 @@ export default function MTOItemsForm({
   fieldArray,
   materials,
   errors,
+  control,
 }: MTOItemsFormProps) {
   const { fields, append, remove } = fieldArray;
 
@@ -77,17 +80,29 @@ export default function MTOItemsForm({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Material *
                 </label>
-                <select
-                  {...register(`items.${index}.material_id`, { valueAsNumber: true })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="">Select material</option>
-                  {materials.map((material) => (
-                    <option key={material.id} value={material.id}>
-                      {material.material_code} - {material.description}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name={`items.${index}.material_id`}
+                  control={control}
+                  render={({ field }) => (
+                    <Combobox
+                      items={materials}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <ComboboxInput placeholder="Select material..." showClear />
+                      <ComboboxContent>
+                        <ComboboxEmpty>No material found.</ComboboxEmpty>
+                        <ComboboxList>
+                          {(m: any) => (
+                            <ComboboxItem key={m.id} value={m.id}>
+                              {m.material_code} - {m.description}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  )}
+                />
                 {((errors.items as any)?.[index]?.material_id) && (
                   <p className="text-red-600 text-xs mt-1">
                     {((errors.items as any)?.[index]?.material_id)?.message}

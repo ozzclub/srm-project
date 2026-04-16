@@ -239,6 +239,7 @@ export default function MTONewPage() {
               fieldArray={itemsFieldArray}
               materials={materials || []}
               errors={errors}
+              control={control}
             />
           </div>
 

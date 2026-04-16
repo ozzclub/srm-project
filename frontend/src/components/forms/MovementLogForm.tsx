@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { materialApi, locationApi, movementTypeApi } from '@/lib/api';
 import { MovementLog } from '@/types';
 import { generateTransactionId } from '@/lib/utils';
 import { useEffect } from 'react';
+import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from '@/components/ui/combobox';
 
 const movementLogSchema = z.object({
   transaction_id: z.string().min(1, 'Required'),
@@ -58,6 +59,7 @@ export default function MovementLogForm({
     formState: { errors },
     watch,
     reset,
+    control,
   } = useForm<MovementLogFormData>({
     resolver: zodResolver(movementLogSchema),
     defaultValues: initialData
@@ -186,12 +188,29 @@ export default function MovementLogForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Material</label>
-            <select {...register('material_id', { valueAsNumber: true })} className={inputClass}>
-              <option value={0}>Select...</option>
-              {materials?.map((m: any) => (
-                <option key={m.id} value={m.id}>{m.description}</option>
-              ))}
-            </select>
+            <Controller
+              name="material_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  items={materials || []}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <ComboboxInput placeholder="Select material..." showClear />
+                  <ComboboxContent>
+                    <ComboboxEmpty>No material found.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(m: any) => (
+                        <ComboboxItem key={m.id} value={m.id}>
+                          {m.material_code} - {m.description}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+              )}
+            />
             {errors.material_id && <p className={errorClass}>{errors.material_id.message}</p>}
             {selectedMaterialData && (
               <p className="mt-1.5 text-xs text-gray-500">
@@ -214,22 +233,56 @@ export default function MovementLogForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>From Location</label>
-            <select {...register('from_location_id', { valueAsNumber: true })} className={inputClass}>
-              <option value={0}>Select...</option>
-              {locations?.map((l: any) => (
-                <option key={l.id} value={l.id}>{l.location_name}</option>
-              ))}
-            </select>
+            <Controller
+              name="from_location_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  items={locations || []}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <ComboboxInput placeholder="Select from location..." showClear />
+                  <ComboboxContent>
+                    <ComboboxEmpty>No location found.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(l: any) => (
+                        <ComboboxItem key={l.id} value={l.id}>
+                          {l.location_name}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+              )}
+            />
             {errors.from_location_id && <p className={errorClass}>{errors.from_location_id.message}</p>}
           </div>
           <div>
             <label className={labelClass}>To Location</label>
-            <select {...register('to_location_id', { valueAsNumber: true })} className={inputClass}>
-              <option value={0}>Select...</option>
-              {locations?.map((l: any) => (
-                <option key={l.id} value={l.id}>{l.location_name}</option>
-              ))}
-            </select>
+            <Controller
+              name="to_location_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  items={locations || []}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <ComboboxInput placeholder="Select to location..." showClear />
+                  <ComboboxContent>
+                    <ComboboxEmpty>No location found.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(l: any) => (
+                        <ComboboxItem key={l.id} value={l.id}>
+                          {l.location_name}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+              )}
+            />
             {errors.to_location_id && <p className={errorClass}>{errors.to_location_id.message}</p>}
           </div>
           <div className="md:col-span-2">
