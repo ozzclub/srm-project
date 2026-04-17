@@ -20,7 +20,7 @@ export function formatDate(date: string | Date): string {
     month: 'long',
     day: 'numeric',
   });
-}
+} 
 
 export function formatDateTime(date: string | Date): string {
   return new Date(date).toLocaleString('id-ID', {

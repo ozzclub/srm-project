@@ -21,7 +21,7 @@ const ComboboxItemIndicator = BaseCombobox.ItemIndicator
 const ComboboxEmpty = BaseCombobox.Empty
 const ComboboxValue = BaseCombobox.Value
 
-interface ComboboxProps<T> {
+interface ComboboxProps<T> { 
   items: T[]
   value?: T | null
   onValueChange?: (value: T | null) => void
