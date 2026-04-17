@@ -1,0 +1,3 @@
+module.exports=[45053,a=>{"use strict";var b=a.i(57850),c=a.i(45056),d=a.i(93609);a.s(["default",0,function(){let a=(0,d.useParams)(),e=(0,d.useRouter)();return(0,c.useEffect)(()=>{a.id&&e.replace(`/transaction/${a.id}`)},[a.id,e]),(0,b.jsx)("div",{className:"min-h-screen flex items-center justify-center",children:(0,b.jsx)("p",{className:"text-gray-500",children:"Redirecting to transaction page..."})})}])}];
+
+//# sourceMappingURL=frontend_src_app_movement-log_%5Bid%5D_page_tsx_0em9ma5._.js.map

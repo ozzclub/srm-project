@@ -1,0 +1,95 @@
+{
+  "app": {
+    "[project]/frontend/src/app/_not-found/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/dashboard/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/do-number/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/documents/[transactionId]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/inventory/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/login/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/material/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/movement-log/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/movement-log/new/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/movement-log/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/mto/[id]/edit/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/mto/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/mto/new/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/mto/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/spp-request/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/spp-request/new/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/spp-request/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/transaction/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/trip-id/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/users/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/frontend/src/app/workshop/page": [
+      "static/media/caa3a2e1cccd8315-s.p.16t1db8_9y2o~.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

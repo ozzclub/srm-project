@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/spp-request/layout,_N_T_/spp-request/new/layout,_N_T_/spp-request/new/page,_N_T_/spp-request/new"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/spp-request/new/__PAGE__",
+    "/spp-request/new",
+    "/spp-request",
+    "/_index",
+    "/_head"
+  ]
+}
