@@ -73,7 +73,7 @@ export default function MTODetailPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="space-y-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-48"></div>
             <div className="h-64 bg-gray-200 rounded"></div>
@@ -86,7 +86,7 @@ export default function MTODetailPage() {
   if (!mtoData) {
     return (
       <DashboardLayout>
-        <div className="max-w-5xl mx-auto text-center py-12">
+        <div className="text-center py-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">MTO Not Found</h2>
           <p className="text-gray-600 mb-6">The MTO request you're looking for doesn't exist.</p>
@@ -106,7 +106,7 @@ export default function MTODetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
